@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Chemical Structure Comparison</title>
+</head>
+<body>
+    <h1>Chemical Structure Comparison</h1>
+    <form method="POST" enctype="multipart/form-data">
+        {{ form.hidden_tag() }}
+        <p>
+            {{ form.molfile_input.label }}<br>
+            {{ form.molfile_input() }}<br>
+            {% if form.molfile_input.errors %}
+                {% for error in form.molfile_input.errors %}
+                    <span style="color: red;">{{ error }}</span><br>
+                {% endfor %}
+            {% endif %}
+        </p>
+        <p>
+            {{ form.chem_input2.label }}<br>
+            {{ form.chem_input2(size=32) }}<br>
+            {% if form.chem_input2.errors %}
+                {% for error in form.chem_input2.errors %}
+                    <span style="color: red;">{{ error }}</span><br>
+                {% endfor %}
+            {% endif %}
+        </p>
+        <p>{{ form.submit() }}</p>
+    </form>
+    {% if similarity is not none %}
+        <p>Tanimoto similarity: {{ similarity }}</p>
+    {% endif %}
+    {% if img1 %}
+        <p>Molecule from molfile:</p>
+        <img src="data:image/png;base64,{{ img1 }}" alt="Molecule 1 Image">
+        {% if smiles_from_molfile %}
+            <p>SMILES from molfile: {{ smiles_from_molfile }}</p>
+        {% endif %}
+    {% endif %}
+    {% if img2 %}
+        <p>Molecule from SMILES:</p>
+        <img src="data:image/png;base64,{{ img2 }}" alt="Molecule 2 Image">
+    {% endif %}
+</body>
+</html>
