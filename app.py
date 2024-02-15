@@ -1,12 +1,12 @@
 import base64
 from io import BytesIO
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, redirect, url_for
+from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from rdkit import Chem
 from rdkit.Chem import Draw, AllChem, DataStructs
 from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField, FileField
 from wtforms.validators import DataRequired
-
 
 # Определение функции, которая конвертирует изображение в строку base64
 def img_to_base64(img):
@@ -14,7 +14,6 @@ def img_to_base64(img):
     img.save(img_buffer, format="PNG")
     img_str = base64.b64encode(img_buffer.getvalue()).decode("utf-8")
     return img_str
-
 
 # Определение функции, которая конвертирует molfile в SMILES
 def molfile_to_smiles(molfile_content):
@@ -24,16 +23,26 @@ def molfile_to_smiles(molfile_content):
         return smiles
     return None
 
-
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your_secret_key'
+login_manager = LoginManager()
+login_manager.init_app(app)
 
+class User(UserMixin):
+    pass
+
+@login_manager.user_loader
+def load_user(user_id):
+    # Здесь нужно реализовать загрузку пользователя из базы данных, которую я создам в дальнейшем
+    # В данном примере загружаем фиктивного пользователя с идентификатором '1'
+    user = User()
+    user.id = '1'
+    return user
 
 class ChemComparisonForm(FlaskForm):
     molfile_input = FileField('Molfile')
     chem_input2 = StringField('SMILES 2', validators=[DataRequired()])
     submit = SubmitField('Compare')
-
 
 def calculate_tanimoto_similarity(molecule1, molecule2):
     """
@@ -55,8 +64,29 @@ def calculate_tanimoto_similarity(molecule1, molecule2):
 
     return similarity
 
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        # Неразвитая логика проверки имени пользователя и пароля
+        username = request.form['username']
+        password = request.form['password']
+
+        # В данном примере допустим, что проверка пройдена
+        user = User()
+        user.id = '1'
+        login_user(user)
+        return redirect(url_for('index'))  # Перенаправляем на страницу '/similarity'
+
+    return render_template('login.html')
+
+@app.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    return redirect(url_for('login'))
 
 @app.route('/similarity', methods=['GET', 'POST'])
+@login_required
 def index():
     form = ChemComparisonForm()
     similarity = None
@@ -91,7 +121,6 @@ def index():
 
     return render_template('index.html', form=form, similarity=similarity, img1=img_base64_1, img2=img_base64_2,
                            smiles_from_molfile=smiles_from_molfile)
-
 
 if __name__ == '__main__':
     app.run(debug=True)
