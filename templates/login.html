@@ -2,19 +2,31 @@
 <html>
 <head>
     <title>Login</title>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 <body>
-    <h1>Login</h1>
+    <header>
+        <nav>
+            <ul class="navigation-menu">
+                <li><a href="#">Домой</a></li>
+                <li><a href="#">О модуле</a></li>
+                <li><a href="#">Поиск соединения</a></li>
+            </ul>
+        </nav>
+    </header>
+
     <form method="POST">
+        <h1>Login</h1>
         <p>
-            Username:<br>
-            <input type="text" name="username" required>
+            Добро пожаловать в модуль! Пожалуйста, авторизуйтесь<br>
         </p>
         <p>
-            Password:<br>
-            <input type="password" name="password" required>
+            <input type="text" name="username" required placeholder="ваш логин">
         </p>
-        <p><input type="submit" value="Login"></p>
+        <p>
+            <input type="password" name="password" required placeholder="ваш пароль">
+        </p>
+        <p><input type="submit" value="Login" class="login-button"></p>
     </form>
 </body>
 </html>
