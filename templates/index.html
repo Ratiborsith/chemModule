@@ -5,56 +5,92 @@
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 <body>
-    <header>
-        <nav>
-            <ul class="navigation-menu">
-                <li><a href="/">Домой</a></li>
-                <li><a href="/about">О модуле</a></li>
-                <li><a href="#">Поиск соединения</a></li>
-                <li><a href="#">Сравнение формул</a></li>
-                <li><a href="/logout">Выйти</a></li>
-            </ul>
-        </nav>
-    </header>
+<header>
+    <nav>
+        <ul class="navigation-menu">
+            <li><a href="/">Домой</a></li>
+            <li><a href="/about">О модуле</a></li>
+            <li><a href="#">Поиск соединения</a></li>
+            <li><a href="#">Сравнение формул</a></li>
+            <li><a href="/logout">Выйти</a></li>
+        </ul>
+    </nav>
+</header>
 
-    <div class="page-content">
-        <h1>Chemical Structure Comparison</h1>
-        <form method="POST" enctype="multipart/form-data" class="comparison-form">
-            {{ form.hidden_tag() }}
-            <p>
-                {{ form.molfile_input.label }}<br>
-                {{ form.molfile_input() }}<br>
-                {% if form.molfile_input.errors %}
-                    {% for error in form.molfile_input.errors %}
-                        <span style="color: red;">{{ error }}</span><br>
-                    {% endfor %}
-                {% endif %}
-            </p>
-            <p>
-                {{ form.chem_input2.label }}<br>
-                {{ form.chem_input2(size=32) }}<br>
-                {% if form.chem_input2.errors %}
-                    {% for error in form.chem_input2.errors %}
-                        <span style="color: red;">{{ error }}</span><br>
-                    {% endfor %}
-                {% endif %}
-            </p>
-            <p>{{ form.submit() }}</p>
-        </form>
-        {% if similarity is not none %}
-            <p>Tanimoto similarity: {{ similarity }}</p>
-        {% endif %}
-        {% if img1 %}
-            <p>Molecule from molfile:</p>
-            <img src="data:image/png;base64,{{ img1 }}" alt="Molecule 1 Image">
-            {% if smiles_from_molfile %}
-                <p>SMILES from molfile: {{ smiles_from_molfile }}</p>
+<div class="page-content">
+    <h1>Chemical Structure Comparison</h1>
+    <form method="POST" class="comparison-form">
+        {{ form.hidden_tag() }}
+        <p>
+            {{ form.patent_id.label }}<br>
+            {{ form.patent_id(id="patent_id") }}<br>
+            {% if form.patent_id.errors %}
+                {% for error in form.patent_id.errors %}
+                    <span style="color: red;">{{ error }}</span><br>
+                {% endfor %}
             {% endif %}
+        </p>
+
+        <p>
+            <label for="molfile_path">Выберите molfile:</label><br>
+            <select name="molfile_path" id="molfile_path">
+                <option value="">Выберите molfile</option>
+            </select>
+        </p>
+
+        <p>
+            {{ form.chem_input2.label }}<br>
+            {{ form.chem_input2(size=32) }}<br>
+            {% if form.chem_input2.errors %}
+                {% for error in form.chem_input2.errors %}
+                    <span style="color: red;">{{ error }}</span><br>
+                {% endfor %}
+            {% endif %}
+        </p>
+        <p>{{ form.submit() }}</p>
+    </form>
+
+    {% if similarity is not none %}
+        <p>Tanimoto similarity: {{ similarity }}</p>
+    {% endif %}
+    {% if img1 %}
+        <p>Molecule from molfile:</p>
+        <img src="data:image/png;base64,{{ img1 }}" alt="Molecule 1 Image">
+        {% if smiles_from_molfile %}
+            <p>SMILES from molfile: {{ smiles_from_molfile }}</p>
         {% endif %}
-        {% if img2 %}
-            <p>Molecule from SMILES:</p>
-            <img src="data:image/png;base64,{{ img2 }}" alt="Molecule 2 Image">
-        {% endif %}
-    </div>
+    {% endif %}
+    {% if img2 %}
+        <p>Molecule from SMILES:</p>
+        <img src="data:image/png;base64,{{ img2 }}" alt="Molecule 2 Image">
+    {% endif %}
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var patentSelect = document.getElementById('patent_id');
+        var molfileSelect = document.getElementById('molfile_path');
+
+        patentSelect.addEventListener('change', function() {
+            var selectedPatentId = patentSelect.value;
+
+            fetch('/get_molfiles_for_patent/' + selectedPatentId)
+                .then(response => response.json())
+                .then(data => {
+                    molfileSelect.innerHTML = '<option value="">Выберите molfile</option>'; // Clear previous entries
+
+                    if (data.molfiles.length > 0) {
+                        data.molfiles.forEach(function(molfile) {
+                            var option = document.createElement('option');
+                            option.value = molfile[0];
+                            option.textContent = molfile[0];
+                            molfileSelect.appendChild(option);
+                        });
+                    }
+                })
+                .catch(error => console.error('Error fetching molfiles:', error));
+        });
+    });
+</script>
 </body>
 </html>

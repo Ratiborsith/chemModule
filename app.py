@@ -1,4 +1,5 @@
 import base64
+import os
 import sqlite3
 from io import BytesIO
 from flask import Flask, render_template, request, redirect, url_for
@@ -8,7 +9,8 @@ from rdkit.Chem import Draw, AllChem, DataStructs
 from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField, FileField
 from wtforms.validators import DataRequired
-
+from wtforms import SelectField
+from flask import jsonify
 
 # Функция для получения списка патентов из базы данных
 def get_patents():
@@ -63,7 +65,7 @@ def load_user(user_id):
         return None
 
 class ChemComparisonForm(FlaskForm):
-    molfile_input = FileField('Molfile')
+    patent_id = SelectField('Select Patent', coerce=int, validators=[DataRequired()])
     chem_input2 = StringField('SMILES 2', validators=[DataRequired()])
     submit = SubmitField('Compare')
 
@@ -124,23 +126,35 @@ def logout():
     logout_user()
     return redirect(url_for('login'))
 
-# страница сравнения химических соединений
+# страница сравнения химических соединен
 @app.route('/similarity', methods=['GET', 'POST'])
 @login_required
 def index():
     form = ChemComparisonForm()
     similarity = None
-
     img_base64_1 = None
     img_base64_2 = None
     smiles_from_molfile = None
+    molfiles_for_patent = None
+
+    patents = get_patents()
+    form.patent_id.choices = [(patent[0], f"{patent[1]} - {patent[2]}") for patent in patents]
 
     if form.validate_on_submit():
-        molfile = form.molfile_input.data
+        selected_patent_id = form.patent_id.data
+        selected_molfile_path = request.form.get('molfile_path')  # Получаем выбранный пользователем molfile_path
         chem_input2 = form.chem_input2.data.strip()
 
         try:
-            molfile_content = molfile.read().decode('utf-8')  # Считываем содержимое molfile
+            # Получаем путь к каталогу molfiles внутри проекта
+            molfiles_dir = os.path.join(app.root_path)
+            selected_molfile_path = selected_molfile_path.replace('/', os.sep)
+            # Формируем абсолютный путь к выбранному файлу
+            selected_molfile_abs_path = molfiles_dir + selected_molfile_path
+            with open(selected_molfile_abs_path, 'r') as molfile:
+                molfile_data = molfile.read()
+                molfile_content = molfile_data  # Считываем содержимое molfile_data
+
             mol1 = Chem.MolFromMolBlock(molfile_content)
             smiles_from_molfile = molfile_to_smiles(molfile_content)
             similarity = calculate_tanimoto_similarity(Chem.MolToMolBlock(mol1), chem_input2)
@@ -149,9 +163,7 @@ def index():
                 img1 = Draw.MolToImage(mol1)
                 img_base64_1 = img_to_base64(img1)
 
-            # Convert SMILES strings to RDKit molecules for drawing images
             mol2 = Chem.MolFromSmiles(chem_input2)
-
             if mol2 is not None:
                 img2 = Draw.MolToImage(mol2)
                 img_base64_2 = img_to_base64(img2)
@@ -160,9 +172,20 @@ def index():
             return render_template('index.html', form=form, error=str(e))
 
     return render_template('index.html', form=form, similarity=similarity, img1=img_base64_1, img2=img_base64_2,
-                           smiles_from_molfile=smiles_from_molfile)
+                           smiles_from_molfile=smiles_from_molfile, molfiles_for_patent=molfiles_for_patent)
 
+@app.route('/get_molfiles_for_patent/<int:patent_id>')
+@login_required
+def get_molfiles_for_patent(patent_id):
+    conn = sqlite3.connect('patents.db')
+    cursor = conn.cursor()
 
+    cursor.execute('SELECT molfile_path FROM compounds WHERE id IN (SELECT compound_id FROM compoundsInPatent WHERE patent_id = ?) AND molfile_path != "not"', (patent_id,))
+    molfiles_for_patent = cursor.fetchall()
+
+    conn.close()
+
+    return jsonify({'molfiles': molfiles_for_patent})
 @app.route('/about')
 def about():
     return render_template('about.html')
