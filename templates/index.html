@@ -2,44 +2,59 @@
 <html>
 <head>
     <title>Chemical Structure Comparison</title>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 <body>
-    <h1>Chemical Structure Comparison</h1>
-    <form method="POST" enctype="multipart/form-data">
-        {{ form.hidden_tag() }}
-        <p>
-            {{ form.molfile_input.label }}<br>
-            {{ form.molfile_input() }}<br>
-            {% if form.molfile_input.errors %}
-                {% for error in form.molfile_input.errors %}
-                    <span style="color: red;">{{ error }}</span><br>
-                {% endfor %}
-            {% endif %}
-        </p>
-        <p>
-            {{ form.chem_input2.label }}<br>
-            {{ form.chem_input2(size=32) }}<br>
-            {% if form.chem_input2.errors %}
-                {% for error in form.chem_input2.errors %}
-                    <span style="color: red;">{{ error }}</span><br>
-                {% endfor %}
-            {% endif %}
-        </p>
-        <p>{{ form.submit() }}</p>
-    </form>
-    {% if similarity is not none %}
-        <p>Tanimoto similarity: {{ similarity }}</p>
-    {% endif %}
-    {% if img1 %}
-        <p>Molecule from molfile:</p>
-        <img src="data:image/png;base64,{{ img1 }}" alt="Molecule 1 Image">
-        {% if smiles_from_molfile %}
-            <p>SMILES from molfile: {{ smiles_from_molfile }}</p>
+    <header>
+        <nav>
+            <ul class="navigation-menu">
+                <li><a href="/">Домой</a></li>
+                <li><a href="/about">О модуле</a></li>
+                <li><a href="#">Поиск соединения</a></li>
+                <li><a href="#">Сравнение формул</a></li>
+                <li><a href="/logout">Выйти</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <div class="page-content">
+        <h1>Chemical Structure Comparison</h1>
+        <form method="POST" enctype="multipart/form-data" class="comparison-form">
+            {{ form.hidden_tag() }}
+            <p>
+                {{ form.molfile_input.label }}<br>
+                {{ form.molfile_input() }}<br>
+                {% if form.molfile_input.errors %}
+                    {% for error in form.molfile_input.errors %}
+                        <span style="color: red;">{{ error }}</span><br>
+                    {% endfor %}
+                {% endif %}
+            </p>
+            <p>
+                {{ form.chem_input2.label }}<br>
+                {{ form.chem_input2(size=32) }}<br>
+                {% if form.chem_input2.errors %}
+                    {% for error in form.chem_input2.errors %}
+                        <span style="color: red;">{{ error }}</span><br>
+                    {% endfor %}
+                {% endif %}
+            </p>
+            <p>{{ form.submit() }}</p>
+        </form>
+        {% if similarity is not none %}
+            <p>Tanimoto similarity: {{ similarity }}</p>
         {% endif %}
-    {% endif %}
-    {% if img2 %}
-        <p>Molecule from SMILES:</p>
-        <img src="data:image/png;base64,{{ img2 }}" alt="Molecule 2 Image">
-    {% endif %}
+        {% if img1 %}
+            <p>Molecule from molfile:</p>
+            <img src="data:image/png;base64,{{ img1 }}" alt="Molecule 1 Image">
+            {% if smiles_from_molfile %}
+                <p>SMILES from molfile: {{ smiles_from_molfile }}</p>
+            {% endif %}
+        {% endif %}
+        {% if img2 %}
+            <p>Molecule from SMILES:</p>
+            <img src="data:image/png;base64,{{ img2 }}" alt="Molecule 2 Image">
+        {% endif %}
+    </div>
 </body>
 </html>

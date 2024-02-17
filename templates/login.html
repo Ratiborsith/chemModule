@@ -9,24 +9,28 @@
         <nav>
             <ul class="navigation-menu">
                 <li><a href="#">Домой</a></li>
-                <li><a href="#">О модуле</a></li>
+                <li><a href="/about">О модуле</a></li>
                 <li><a href="#">Поиск соединения</a></li>
+                <li><a href="#">Сравнение формул</a></li>
             </ul>
         </nav>
     </header>
 
-    <form method="POST">
-        <h1>Login</h1>
-        <p>
-            Добро пожаловать в модуль! Пожалуйста, авторизуйтесь<br>
-        </p>
-        <p>
-            <input type="text" name="username" required placeholder="ваш логин">
-        </p>
-        <p>
-            <input type="password" name="password" required placeholder="ваш пароль">
-        </p>
-        <p><input type="submit" value="Login" class="login-button"></p>
-    </form>
+    <div class="login-container">
+        <form method="POST" class="login-form">
+            <h1>Login</h1>
+            <p>
+                Добро пожаловать в модуль! Пожалуйста, авторизуйтесь<br>
+            </p>
+            <p>
+                <input type="text" name="username" required placeholder="ваш логин">
+            </p>
+            <p>
+                <input type="password" name="password" required placeholder="ваш пароль">
+            </p>
+            <p><input type="submit" value="Login" class="login-button"></p>
+        </form>
+    </div>
 </body>
+
 </html>

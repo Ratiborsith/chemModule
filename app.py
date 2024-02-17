@@ -31,6 +31,10 @@ login_manager.init_app(app)
 class User(UserMixin):
     pass
 
+@login_manager.unauthorized_handler
+def unauthorized_callback():
+    return redirect(url_for('login'))
+
 @login_manager.user_loader
 def load_user(user_id):
     # Здесь нужно реализовать загрузку пользователя из базы данных, которую я создам в дальнейшем
@@ -85,6 +89,7 @@ def logout():
     logout_user()
     return redirect(url_for('login'))
 
+# страница сравнения химических соединений
 @app.route('/similarity', methods=['GET', 'POST'])
 @login_required
 def index():
@@ -121,6 +126,13 @@ def index():
 
     return render_template('index.html', form=form, similarity=similarity, img1=img_base64_1, img2=img_base64_2,
                            smiles_from_molfile=smiles_from_molfile)
+
+
+@app.route('/about')
+def about():
+    return render_template('about.html')
+
+
 
 if __name__ == '__main__':
     app.run(debug=True)
