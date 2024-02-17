@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Список патентов</title>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <header>
+        <nav>
+            <ul class="navigation-menu">
+                <li><a href="/">Домой</a></li>
+                <li><a href="/about">О модуле</a></li>
+                <li><a href="#">Поиск соединения</a></li>
+                <li><a href="/similarity">Сравнение формул</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <div class="page-content">
+        <h1>Список патентов</h1>
+        <ul>
+            {% for patent in patents %}
+            <li>
+                <a href="{{ patent[3] }}" target="_blank">{{ patent[2] }} - {{ patent[1] }}</a>
+                <br>
+                Номер патента: {{ patent[2] }}
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+</body>
+</html>

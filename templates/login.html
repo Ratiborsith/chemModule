@@ -3,12 +3,19 @@
 <head>
     <title>Login</title>
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='styles.css') }}">
+    <script>
+        {% if error %}
+            window.onload = function() {
+                alert('{{ error }}');
+            };
+        {% endif %}
+    </script>
 </head>
 <body>
     <header>
         <nav>
             <ul class="navigation-menu">
-                <li><a href="#">Домой</a></li>
+                <li><a href="/">Домой</a></li>
                 <li><a href="/about">О модуле</a></li>
                 <li><a href="#">Поиск соединения</a></li>
                 <li><a href="#">Сравнение формул</a></li>
@@ -32,5 +39,4 @@
         </form>
     </div>
 </body>
-
 </html>

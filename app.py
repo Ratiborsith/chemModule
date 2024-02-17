@@ -1,4 +1,5 @@
 import base64
+import sqlite3
 from io import BytesIO
 from flask import Flask, render_template, request, redirect, url_for
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
@@ -7,6 +8,17 @@ from rdkit.Chem import Draw, AllChem, DataStructs
 from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField, FileField
 from wtforms.validators import DataRequired
+
+
+# Функция для получения списка патентов из базы данных
+def get_patents():
+    conn = sqlite3.connect('patents.db')
+    cursor = conn.cursor()
+    cursor.execute('SELECT id, name, PatentNumber, link FROM patents')
+    patents = cursor.fetchall()
+    conn.close()
+    return patents
+
 
 # Определение функции, которая конвертирует изображение в строку base64
 def img_to_base64(img):
@@ -37,11 +49,18 @@ def unauthorized_callback():
 
 @login_manager.user_loader
 def load_user(user_id):
-    # Здесь нужно реализовать загрузку пользователя из базы данных, которую я создам в дальнейшем
-    # В данном примере загружаем фиктивного пользователя с идентификатором '1'
-    user = User()
-    user.id = '1'
-    return user
+    conn = sqlite3.connect('patents.db')
+    cursor = conn.cursor()
+    cursor.execute('SELECT * FROM users WHERE id = ?', (user_id,))
+    user_data = cursor.fetchone()
+    conn.close()
+
+    if user_data:
+        user = User()
+        user.id = user_data[0]  # Предполагается, что первый столбец - это ID пользователя
+        return user
+    else:
+        return None
 
 class ChemComparisonForm(FlaskForm):
     molfile_input = FileField('Molfile')
@@ -68,20 +87,36 @@ def calculate_tanimoto_similarity(molecule1, molecule2):
 
     return similarity
 
+# Маршрут для отображения списка патентов
+@app.route('/')
+def mainPage():
+    patents = get_patents()
+    return render_template('main.html', patents=patents)
+
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+    error = None
     if request.method == 'POST':
-        # Неразвитая логика проверки имени пользователя и пароля
         username = request.form['username']
         password = request.form['password']
 
-        # В данном примере допустим, что проверка пройдена
-        user = User()
-        user.id = '1'
-        login_user(user)
-        return redirect(url_for('index'))  # Перенаправляем на страницу '/similarity'
+        conn = sqlite3.connect('patents.db')
+        cursor = conn.cursor()
+        cursor.execute('SELECT * FROM users WHERE login = ? AND password = ?', (username, password))
+        user_data = cursor.fetchone()
+        conn.close()
 
-    return render_template('login.html')
+        if user_data:
+            user = User()
+            user.id = user_data[0]  # Предполагается, что первый столбец - это ID пользователя
+            login_user(user)
+            return redirect(url_for('index'))  # Перенаправляем на страницу '/similarity'
+        else:
+            error = "Неверный логин или пароль"
+
+    return render_template('login.html', error=error)
+
 
 @app.route('/logout')
 @login_required
