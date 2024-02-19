@@ -2,7 +2,7 @@ import base64
 import os
 import sqlite3
 from io import BytesIO
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for, jsonify
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from rdkit import Chem
 from rdkit.Chem import Draw, AllChem, DataStructs
@@ -10,7 +10,6 @@ from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField, FileField
 from wtforms.validators import DataRequired
 from wtforms import SelectField
-from flask import jsonify
 
 # Функция для получения списка патентов из базы данных
 def get_patents():
@@ -20,7 +19,6 @@ def get_patents():
     patents = cursor.fetchall()
     conn.close()
     return patents
-
 
 # Определение функции, которая конвертирует изображение в строку base64
 def img_to_base64(img):
@@ -143,7 +141,8 @@ def index():
     if form.validate_on_submit():
         selected_patent_id = form.patent_id.data
         selected_molfile_path = request.form.get('molfile_path')  # Получаем выбранный пользователем molfile_path
-        chem_input2 = form.chem_input2.data.strip()
+        selected_second_patent_id = request.form.get('second_patent_id')  # Получаем выбр. пользователем второй патент
+        chem_input2 = request.form.get('chem_input2')  # Получаем выбранный пользователем SMILES для второго соединения
 
         try:
             # Получаем путь к каталогу molfiles внутри проекта
@@ -157,14 +156,16 @@ def index():
 
             mol1 = Chem.MolFromMolBlock(molfile_content)
             smiles_from_molfile = molfile_to_smiles(molfile_content)
-            similarity = calculate_tanimoto_similarity(Chem.MolToMolBlock(mol1), chem_input2)
 
-            if mol1 is not None:
+            # Строим вторую молекулу по введенному пользователем SMILES
+            mol2 = Chem.MolFromSmiles(chem_input2)
+
+            if mol1 is not None and mol2 is not None:
+                similarity = calculate_tanimoto_similarity(Chem.MolToMolBlock(mol1), Chem.MolToSmiles(mol2))
+
                 img1 = Draw.MolToImage(mol1)
                 img_base64_1 = img_to_base64(img1)
 
-            mol2 = Chem.MolFromSmiles(chem_input2)
-            if mol2 is not None:
                 img2 = Draw.MolToImage(mol2)
                 img_base64_2 = img_to_base64(img2)
 
@@ -173,6 +174,7 @@ def index():
 
     return render_template('index.html', form=form, similarity=similarity, img1=img_base64_1, img2=img_base64_2,
                            smiles_from_molfile=smiles_from_molfile, molfiles_for_patent=molfiles_for_patent)
+
 
 @app.route('/get_molfiles_for_patent/<int:patent_id>')
 @login_required
@@ -186,11 +188,36 @@ def get_molfiles_for_patent(patent_id):
     conn.close()
 
     return jsonify({'molfiles': molfiles_for_patent})
+
+@app.route('/get_smiles_for_patent/<int:patent_id>')
+@login_required
+def get_smiles_for_patent(patent_id):
+    conn = sqlite3.connect('patents.db')
+    cursor = conn.cursor()
+
+    cursor.execute('SELECT smilesName FROM compounds WHERE id IN (SELECT compound_id FROM compoundsInPatent WHERE patent_id = ?) AND smilesName != "not"', (patent_id,))
+    smiles_for_patent = cursor.fetchall()
+
+    conn.close()
+
+    return jsonify({'smiles': [smile[0] for smile in smiles_for_patent]})
+
+@app.route('/get_patents_except/<int:patent_id>')
+@login_required
+def get_patents_except(patent_id):
+    conn = sqlite3.connect('patents.db')
+    cursor = conn.cursor()
+
+    cursor.execute('SELECT id, name FROM patents WHERE id != ?', (patent_id,))
+    patents_except = cursor.fetchall()
+
+    conn.close()
+
+    return jsonify({'patents': patents_except})
+
 @app.route('/about')
 def about():
     return render_template('about.html')
-
-
 
 if __name__ == '__main__':
     app.run(debug=True)

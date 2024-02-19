@@ -39,13 +39,17 @@
         </p>
 
         <p>
-            {{ form.chem_input2.label }}<br>
-            {{ form.chem_input2(size=32) }}<br>
-            {% if form.chem_input2.errors %}
-                {% for error in form.chem_input2.errors %}
-                    <span style="color: red;">{{ error }}</span><br>
-                {% endfor %}
-            {% endif %}
+            <label for="second_patent_id">Выберите второй патент:</label><br>
+            <select name="second_patent_id" id="second_patent_id">
+                <option value="">Выберите патент</option>
+            </select>
+        </p>
+
+        <p>
+            <label for="chem_input2">Выберите SMILES для второго соединения:</label><br>
+            <select name="chem_input2" id="chem_input2">
+                <option value="">Выберите SMILES</option>
+            </select>
         </p>
         <p>{{ form.submit() }}</p>
     </form>
@@ -70,6 +74,8 @@
     document.addEventListener('DOMContentLoaded', function() {
         var patentSelect = document.getElementById('patent_id');
         var molfileSelect = document.getElementById('molfile_path');
+        var secondPatentSelect = document.getElementById('second_patent_id');
+        var chemInput2Select = document.getElementById('chem_input2');
 
         patentSelect.addEventListener('change', function() {
             var selectedPatentId = patentSelect.value;
@@ -89,6 +95,42 @@
                     }
                 })
                 .catch(error => console.error('Error fetching molfiles:', error));
+
+            fetch('/get_patents_except/' + selectedPatentId)
+                .then(response => response.json())
+                .then(data => {
+                    secondPatentSelect.innerHTML = '<option value="">Выберите патент</option>'; // Clear previous entries
+
+                    if (data.patents.length > 0) {
+                        data.patents.forEach(function(patent) {
+                            var option = document.createElement('option');
+                            option.value = patent[0];
+                            option.textContent = patent[1];
+                            secondPatentSelect.appendChild(option);
+                        });
+                    }
+                })
+                .catch(error => console.error('Error fetching patents:', error));
+        });
+
+        secondPatentSelect.addEventListener('change', function() {
+            var selectedSecondPatentId = secondPatentSelect.value;
+
+            fetch('/get_smiles_for_patent/' + selectedSecondPatentId)
+                .then(response => response.json())
+                .then(data => {
+                    chemInput2Select.innerHTML = '<option value="">Выберите SMILES</option>'; // Clear previous entries
+
+                    if (data.smiles.length > 0) {
+                        data.smiles.forEach(function(smiles) {
+                            var option = document.createElement('option');
+                            option.value = smiles;
+                            option.textContent = smiles;
+                            chemInput2Select.appendChild(option);
+                        });
+                    }
+                })
+                .catch(error => console.error('Error fetching smiles:', error));
         });
     });
 </script>
