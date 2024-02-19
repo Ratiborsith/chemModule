@@ -19,11 +19,12 @@
 
 <div class="page-content">
     <h1>Chemical Structure Comparison</h1>
-    <form method="POST" class="comparison-form">
+    <form method="POST" class="comparison-form" >
         {{ form.hidden_tag() }}
+
         <p>
-            {{ form.patent_id.label }}<br>
-            {{ form.patent_id(id="patent_id") }}<br>
+            <label for="second_patent_id">Выберите первый патент:</label><br>
+            {{ form.patent_id(id="first_patent_id") }}<br>
             {% if form.patent_id.errors %}
                 {% for error in form.patent_id.errors %}
                     <span style="color: red;">{{ error }}</span><br>
@@ -54,85 +55,150 @@
         <p>{{ form.submit() }}</p>
     </form>
 
-    {% if similarity is not none %}
-        <p>Tanimoto similarity: {{ similarity }}</p>
-    {% endif %}
-    {% if img1 %}
-        <p>Molecule from molfile:</p>
-        <img src="data:image/png;base64,{{ img1 }}" alt="Molecule 1 Image">
-        {% if smiles_from_molfile %}
-            <p>SMILES from molfile: {{ smiles_from_molfile }}</p>
-        {% endif %}
-    {% endif %}
-    {% if img2 %}
-        <p>Molecule from SMILES:</p>
-        <img src="data:image/png;base64,{{ img2 }}" alt="Molecule 2 Image">
-    {% endif %}
+    <div id="results">
+        <!-- Результаты будут отображаться здесь -->
+    </div>
 </div>
 
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        var patentSelect = document.getElementById('patent_id');
-        var molfileSelect = document.getElementById('molfile_path');
-        var secondPatentSelect = document.getElementById('second_patent_id');
-        var chemInput2Select = document.getElementById('chem_input2');
+    $(document).ready(function() {
+        $('.comparison-form').submit(function(event) {
+            event.preventDefault();
+            var form_data = $(this).serialize();
+            $.ajax({
+                type: 'POST',
+                url: '/process_comparison',
+                data: form_data,
+                dataType: 'json',
+                success: function(response) {
+                    if (response.error) {
+                        console.error('Error:', response.error);
+                    } else {
+                        var html = '';
 
-        patentSelect.addEventListener('change', function() {
-            var selectedPatentId = patentSelect.value;
+                        if (response.similarity !== null) {
+                            html += '<p>Tanimoto similarity: ' + response.similarity + '</p>';
+                        }
+                        if (response.img1) {
+                            html += '<p>Molecule from molfile:</p>';
+                            html += '<img src="data:image/png;base64,' + response.img1 + '" alt="Molecule 1 Image">';
+                            if (response.smiles_from_molfile) {
+                                html += '<p>SMILES from molfile: ' + response.smiles_from_molfile + '</p>';
+                            }
+                        }
+                        if (response.img2) {
+                            html += '<p>Molecule from SMILES:</p>';
+                            html += '<img src="data:image/png;base64,' + response.img2 + '" alt="Molecule 2 Image">';
+                        }
 
-            fetch('/get_molfiles_for_patent/' + selectedPatentId)
-                .then(response => response.json())
-                .then(data => {
-                    molfileSelect.innerHTML = '<option value="">Выберите molfile</option>'; // Clear previous entries
-
-                    if (data.molfiles.length > 0) {
-                        data.molfiles.forEach(function(molfile) {
-                            var option = document.createElement('option');
-                            option.value = molfile[0];
-                            option.textContent = molfile[0];
-                            molfileSelect.appendChild(option);
-                        });
+                        $('#results').html(html);
                     }
-                })
-                .catch(error => console.error('Error fetching molfiles:', error));
-
-            fetch('/get_patents_except/' + selectedPatentId)
-                .then(response => response.json())
-                .then(data => {
-                    secondPatentSelect.innerHTML = '<option value="">Выберите патент</option>'; // Clear previous entries
-
-                    if (data.patents.length > 0) {
-                        data.patents.forEach(function(patent) {
-                            var option = document.createElement('option');
-                            option.value = patent[0];
-                            option.textContent = patent[1];
-                            secondPatentSelect.appendChild(option);
-                        });
-                    }
-                })
-                .catch(error => console.error('Error fetching patents:', error));
-        });
-
-        secondPatentSelect.addEventListener('change', function() {
-            var selectedSecondPatentId = secondPatentSelect.value;
-
-            fetch('/get_smiles_for_patent/' + selectedSecondPatentId)
-                .then(response => response.json())
-                .then(data => {
-                    chemInput2Select.innerHTML = '<option value="">Выберите SMILES</option>'; // Clear previous entries
-
-                    if (data.smiles.length > 0) {
-                        data.smiles.forEach(function(smiles) {
-                            var option = document.createElement('option');
-                            option.value = smiles;
-                            option.textContent = smiles;
-                            chemInput2Select.appendChild(option);
-                        });
-                    }
-                })
-                .catch(error => console.error('Error fetching smiles:', error));
+                },
+                error: function(error) {
+                    console.log('Error:', error);
+                }
+            });
         });
     });
+</script>
+
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var firstPatentSelect = document.getElementById('first_patent_id');
+    var molfileSelect = document.getElementById('molfile_path');
+    var secondPatentSelect = document.getElementById('second_patent_id');
+    var chemInput2Select = document.getElementById('chem_input2');
+
+    // Функция для загрузки списка патентов для первого соединения
+    function loadFirstPatentList() {
+        fetch('/get_patents_with_molfiles')
+            .then(response => response.json())
+            .then(data => {
+                firstPatentSelect.innerHTML = '<option value="">Выберите патент</option>'; // Clear previous entries
+
+                if (data.patents.length > 0) {
+                    data.patents.forEach(function(patent) {
+                        var option = document.createElement('option');
+                        option.value = patent[0];
+                        option.textContent = patent[1];
+                        firstPatentSelect.appendChild(option);
+                    });
+                }
+            })
+            .catch(error => console.error('Error fetching patents:', error));
+    }
+
+    // Функция для загрузки списка патентов для второго соединения
+    function loadSecondPatentList(selectedPatentId) {
+        fetch('/get_patents_with_smiles')
+            .then(response => response.json())
+            .then(data => {
+                secondPatentSelect.innerHTML = '<option value="">Выберите патент</option>'; // Clear previous entries
+
+                if (data.patents.length > 0) {
+                    data.patents.forEach(function(patent) {
+                        var option = document.createElement('option');
+                        option.value = patent[0];
+                        option.textContent = patent[1];
+                        secondPatentSelect.appendChild(option);
+                    });
+                }
+            })
+            .catch(error => console.error('Error fetching patents:', error));
+    }
+
+    // Загрузка списка патентов для обоих соединений при загрузке страницы
+    loadFirstPatentList();
+    loadSecondPatentList();
+
+    firstPatentSelect.addEventListener('change', function() {
+        var selectedPatentId = firstPatentSelect.value;
+
+        fetch('/get_molfiles_for_patent/' + selectedPatentId)
+            .then(response => response.json())
+            .then(data => {
+                molfileSelect.innerHTML = '<option value="">Выберите molfile</option>'; // Clear previous entries
+
+                if (data.molfiles.length > 0) {
+                    data.molfiles.forEach(function(molfile) {
+                        var option = document.createElement('option');
+                        option.value = molfile[0];
+                        option.textContent = molfile[0];
+                        molfileSelect.appendChild(option);
+                    });
+                }
+            })
+            .catch(error => console.error('Error fetching molfiles:', error));
+
+        // При изменении первого патента загружаем список патентов для второго соединения
+        loadSecondPatentList(selectedPatentId);
+    });
+
+    secondPatentSelect.addEventListener('change', function() {
+        var selectedSecondPatentId = secondPatentSelect.value;
+
+        fetch('/get_smiles_for_patent/' + selectedSecondPatentId)
+            .then(response => response.json())
+            .then(data => {
+                chemInput2Select.innerHTML = '<option value="">Выберите SMILES</option>'; // Clear previous entries
+
+                if (data.smiles.length > 0) {
+                    data.smiles.forEach(function(smiles) {
+                        var option = document.createElement('option');
+                        option.value = smiles;
+                        option.textContent = smiles;
+                        chemInput2Select.appendChild(option);
+                    });
+                }
+            })
+            .catch(error => console.error('Error fetching smiles:', error));
+    });
+});
+
+
 </script>
 </body>
 </html>

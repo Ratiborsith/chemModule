@@ -11,8 +11,17 @@ from wtforms import StringField, SubmitField, FileField
 from wtforms.validators import DataRequired
 from wtforms import SelectField
 
+
 # Функция для получения списка патентов из базы данных
 def get_patents():
+    conn = sqlite3.connect('patents.db')
+    cursor = conn.cursor()
+    cursor.execute('SELECT id, name, PatentNumber, link FROM patents')
+    patents = cursor.fetchall()
+    conn.close()
+    return patents
+
+def get_patents_MOL():
     conn = sqlite3.connect('patents.db')
     cursor = conn.cursor()
     cursor.execute('SELECT id, name, PatentNumber, link FROM patents')
@@ -124,40 +133,34 @@ def logout():
     logout_user()
     return redirect(url_for('login'))
 
-# страница сравнения химических соединен
-@app.route('/similarity', methods=['GET', 'POST'])
+
+from flask import jsonify
+
+@app.route('/process_comparison', methods=['POST'])
 @login_required
-def index():
-    form = ChemComparisonForm()
+def process_comparison():
+    form = ChemComparisonForm(request.form)
     similarity = None
     img_base64_1 = None
     img_base64_2 = None
     smiles_from_molfile = None
-    molfiles_for_patent = None
 
-    patents = get_patents()
-    form.patent_id.choices = [(patent[0], f"{patent[1]} - {patent[2]}") for patent in patents]
-
-    if form.validate_on_submit():
-        selected_patent_id = form.patent_id.data
-        selected_molfile_path = request.form.get('molfile_path')  # Получаем выбранный пользователем molfile_path
-        selected_second_patent_id = request.form.get('second_patent_id')  # Получаем выбр. пользователем второй патент
-        chem_input2 = request.form.get('chem_input2')  # Получаем выбранный пользователем SMILES для второго соединения
+    if 1:
+        selected_molfile_path = request.form.get('molfile_path')
+        selected_second_patent_id = request.form.get('second_patent_id')
+        chem_input2 = request.form.get('chem_input2')
 
         try:
-            # Получаем путь к каталогу molfiles внутри проекта
             molfiles_dir = os.path.join(app.root_path)
             selected_molfile_path = selected_molfile_path.replace('/', os.sep)
-            # Формируем абсолютный путь к выбранному файлу
             selected_molfile_abs_path = molfiles_dir + selected_molfile_path
             with open(selected_molfile_abs_path, 'r') as molfile:
                 molfile_data = molfile.read()
-                molfile_content = molfile_data  # Считываем содержимое molfile_data
+                molfile_content = molfile_data
 
             mol1 = Chem.MolFromMolBlock(molfile_content)
             smiles_from_molfile = molfile_to_smiles(molfile_content)
 
-            # Строим вторую молекулу по введенному пользователем SMILES
             mol2 = Chem.MolFromSmiles(chem_input2)
 
             if mol1 is not None and mol2 is not None:
@@ -170,10 +173,21 @@ def index():
                 img_base64_2 = img_to_base64(img2)
 
         except Exception as e:
-            return render_template('index.html', form=form, error=str(e))
+            return jsonify({'error': str(e)})
 
-    return render_template('index.html', form=form, similarity=similarity, img1=img_base64_1, img2=img_base64_2,
-                           smiles_from_molfile=smiles_from_molfile, molfiles_for_patent=molfiles_for_patent)
+        return jsonify({'similarity': similarity, 'img1': img_base64_1, 'img2': img_base64_2, 'smiles_from_molfile': smiles_from_molfile})
+
+    return jsonify({'error': 'Form validation failed'})
+
+
+# страница сравнения химических соединен
+@app.route('/similarity', methods=['GET', 'POST'])
+@login_required
+def index():
+    form = ChemComparisonForm()
+    patents = get_patents()
+    form.patent_id.choices = [(patent[0], f"{patent[1]} - {patent[2]}") for patent in patents]
+    return render_template('index.html', form=form)
 
 
 @app.route('/get_molfiles_for_patent/<int:patent_id>')
@@ -208,12 +222,50 @@ def get_patents_except(patent_id):
     conn = sqlite3.connect('patents.db')
     cursor = conn.cursor()
 
-    cursor.execute('SELECT id, name FROM patents WHERE id != ?', (patent_id,))
+    cursor.execute('''SELECT DISTINCT p.id, p.name, p.link
+FROM patents p
+JOIN compoundsInPatent cp ON p.id = cp.patent_id
+JOIN compounds c ON cp.compound_id = c.id
+WHERE c.smilesName != "not";
+''')
     patents_except = cursor.fetchall()
 
     conn.close()
 
     return jsonify({'patents': patents_except})
+
+
+
+@app.route('/get_patents_with_molfiles')
+def get_patents_with_molfiles():
+    conn = sqlite3.connect('patents.db')
+    cursor = conn.cursor()
+    cursor.execute('''
+        SELECT DISTINCT p.id, p.name, p.link
+FROM patents p
+JOIN compoundsInPatent cp ON p.id = cp.patent_id
+JOIN compounds c ON cp.compound_id = c.id
+WHERE c.molfile_path != "not"
+    ''')
+    patents_with_molfiles = cursor.fetchall()
+    conn.close()
+    return jsonify({'patents': patents_with_molfiles})
+
+@app.route('/get_patents_with_smiles')
+def get_patents_with_smiles():
+    conn = sqlite3.connect('patents.db')
+    cursor = conn.cursor()
+    cursor.execute('''
+        SELECT DISTINCT p.id, p.name, p.link
+FROM patents p
+JOIN compoundsInPatent cp ON p.id = cp.patent_id
+JOIN compounds c ON cp.compound_id = c.id
+WHERE c.smilesName != "not"
+    ''')
+    patents_with_smiles = cursor.fetchall()
+    conn.close()
+    return jsonify({'patents': patents_with_smiles})
+
 
 @app.route('/about')
 def about():
