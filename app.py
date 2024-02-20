@@ -10,6 +10,7 @@ from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField, FileField
 from wtforms.validators import DataRequired
 from wtforms import SelectField
+import cirpy    # библиотека для обработки uipac
 
 
 # Функция для получения списка патентов из базы данных
@@ -134,9 +135,6 @@ def logout():
     return redirect(url_for('login'))
 
 
-from flask import jsonify
-
-
 # функция с основными рассчетами
 @app.route('/process_comparison', methods=['POST'])
 @login_required
@@ -165,6 +163,9 @@ def process_comparison():
     # INCHI для 1-го
     INCHI1 = request.form.get('chem_input_InChi1_hidden')
 
+    # UIPAC для 1-го
+    UIPAC1 = request.form.get('chem_input_UIPAC1_hidden')
+
     # SMILES для 2-го
     SMILES2 = request.form.get('chem_input2_hidden')
 
@@ -173,6 +174,9 @@ def process_comparison():
 
     # INCHI для 2-го
     INCHI2 = request.form.get('chem_input_InChi2_hidden')
+
+    # UIPAC для 2-го
+    UIPAC2 = request.form.get('chem_input_UIPAC2_hidden')
 
     if slick1 == 0 and slick2 == 0:
         # сравнение MOL1 и MOL2
@@ -378,6 +382,7 @@ def process_comparison():
         mol2 = Chem.MolFromInchi(INCHI2)
         smiles_from_molfile = "NOTHING"
 
+
         if mol1 is not None and mol2 is not None:
             similarity = calculate_tanimoto_similarity(Chem.MolToMolBlock(mol1), Chem.MolToSmiles(mol2))
 
@@ -388,6 +393,159 @@ def process_comparison():
             img_base64_2 = img_to_base64(img2)
 
 
+    # всё с uipac
+    elif slick1 == 0 and slick2 == 3:
+        # MOL1 and UIPAC2
+        mol2_SMILES = cirpy.resolve(UIPAC2, 'smiles')
+
+        try:
+            molfiles_dir = os.path.join(app.root_path)
+            MOL1 = MOL1.replace('/', os.sep)
+            selected_molfile_abs_path = molfiles_dir + MOL1
+            with open(selected_molfile_abs_path, 'r') as molfile:
+                molfile_data = molfile.read()
+                molfile_content = molfile_data
+
+            mol1 = Chem.MolFromMolBlock(molfile_content)
+            smiles_from_molfile = molfile_to_smiles(molfile_content)
+
+            mol2 = Chem.MolFromSmiles(mol2_SMILES)
+
+            if mol1 is not None and mol2 is not None:
+                similarity = calculate_tanimoto_similarity(Chem.MolToMolBlock(mol1), Chem.MolToSmiles(mol2))
+
+                img1 = Draw.MolToImage(mol1)
+                img_base64_1 = img_to_base64(img1)
+
+                img2 = Draw.MolToImage(mol2)
+                img_base64_2 = img_to_base64(img2)
+
+        except Exception as e:
+            return jsonify({'error': str(e)})
+
+
+    elif slick1 == 1 and slick2 == 3:
+        # SMILES1 and UIPAC2
+        mol2_SMILES = cirpy.resolve(UIPAC2, 'smiles')
+
+        mol1 = Chem.MolFromSmiles(SMILES1)
+        smiles_from_molfile = SMILES1   # ПОТОМ УБРАТЬ
+
+        mol2 = Chem.MolFromSmiles(mol2_SMILES)
+
+        if mol1 is not None and mol2 is not None:
+            similarity = calculate_tanimoto_similarity(Chem.MolToMolBlock(mol1), Chem.MolToSmiles(mol2))
+
+            img1 = Draw.MolToImage(mol1)
+            img_base64_1 = img_to_base64(img1)
+
+            img2 = Draw.MolToImage(mol2)
+            img_base64_2 = img_to_base64(img2)
+
+
+
+    elif slick1 == 3 and slick2 == 0:
+        # UIPAC1 and MOL2
+        mol1_SMILES = cirpy.resolve(UIPAC1, 'smiles')
+
+        try:
+            molfiles_dir = os.path.join(app.root_path)
+            MOL2 = MOL2.replace('/', os.sep)
+            selected_molfile_abs_path = molfiles_dir + MOL2
+            with open(selected_molfile_abs_path, 'r') as molfile:
+                molfile_data = molfile.read()
+                molfile_content = molfile_data
+
+            mol2 = Chem.MolFromMolBlock(molfile_content)
+            smiles_from_molfile = molfile_to_smiles(molfile_content)
+
+            mol1 = Chem.MolFromSmiles(mol1_SMILES)
+
+            if mol1 is not None and mol2 is not None:
+                similarity = calculate_tanimoto_similarity(Chem.MolToMolBlock(mol1), Chem.MolToSmiles(mol2))
+
+                img1 = Draw.MolToImage(mol1)
+                img_base64_1 = img_to_base64(img1)
+
+                img2 = Draw.MolToImage(mol2)
+                img_base64_2 = img_to_base64(img2)
+
+        except Exception as e:
+            return jsonify({'error': str(e)})
+
+    elif slick1 == 3 and slick2 == 1:
+        # UIPAC1 and SMILES2
+        mol1_SMILES = cirpy.resolve(UIPAC1, 'smiles')
+
+        mol1 = Chem.MolFromSmiles(mol1_SMILES)
+        smiles_from_molfile = 'NOTHING'   # ПОТОМ УБРАТЬ
+
+        mol2 = Chem.MolFromSmiles(SMILES2)
+
+        if mol1 is not None and mol2 is not None:
+            similarity = calculate_tanimoto_similarity(Chem.MolToMolBlock(mol1), Chem.MolToSmiles(mol2))
+
+            img1 = Draw.MolToImage(mol1)
+            img_base64_1 = img_to_base64(img1)
+
+            img2 = Draw.MolToImage(mol2)
+            img_base64_2 = img_to_base64(img2)
+
+    elif slick1 == 3 and slick2 == 3:
+        # UIPAC1 и UIPAC2
+        # преобразуем uipac в smiles
+        mol1_SMILES = cirpy.resolve(UIPAC1, 'smiles')
+        mol2_SMILES = cirpy.resolve(UIPAC2, 'smiles')
+
+        # дальше проводим обычные операции, как раньше над smiles
+
+        # сравнение SMILES1 и SMILES2
+        mol1 = Chem.MolFromSmiles(mol1_SMILES)
+        smiles_from_molfile = mol1_SMILES   # ПОТОМ УБРАТЬ
+
+        mol2 = Chem.MolFromSmiles(mol2_SMILES)
+
+        if mol1 is not None and mol2 is not None:
+            similarity = calculate_tanimoto_similarity(Chem.MolToMolBlock(mol1), Chem.MolToSmiles(mol2))
+
+            img1 = Draw.MolToImage(mol1)
+            img_base64_1 = img_to_base64(img1)
+
+            img2 = Draw.MolToImage(mol2)
+            img_base64_2 = img_to_base64(img2)
+
+    elif slick1 == 2 and slick2 == 3:
+        # inchi1 and uipac2
+        mol2_SMILES = cirpy.resolve(UIPAC2, 'smiles')
+        mol1 = Chem.MolFromInchi(INCHI1)
+        mol2 = Chem.MolFromSmiles(mol2_SMILES)
+        smiles_from_molfile = "NOTHING"
+
+        if mol1 is not None and mol2 is not None:
+            similarity = calculate_tanimoto_similarity(Chem.MolToMolBlock(mol1), Chem.MolToSmiles(mol2))
+
+            img1 = Draw.MolToImage(mol1)
+            img_base64_1 = img_to_base64(img1)
+
+            img2 = Draw.MolToImage(mol2)
+            img_base64_2 = img_to_base64(img2)
+
+
+    elif slick1 == 3 and slick2 == 2:
+        # uipac1 and inchi2
+        mol1_SMILES = cirpy.resolve(UIPAC1, 'smiles')
+        mol1 = Chem.MolFromSmiles(mol1_SMILES)
+        mol2 = Chem.MolFromInchi(INCHI2)
+        smiles_from_molfile = "NOTHING"
+
+        if mol1 is not None and mol2 is not None:
+            similarity = calculate_tanimoto_similarity(Chem.MolToMolBlock(mol1), Chem.MolToSmiles(mol2))
+
+            img1 = Draw.MolToImage(mol1)
+            img_base64_1 = img_to_base64(img1)
+
+            img2 = Draw.MolToImage(mol2)
+            img_base64_2 = img_to_base64(img2)
 
     return jsonify({'similarity': similarity, 'img1': img_base64_1, 'img2': img_base64_2, 'smiles_from_molfile': smiles_from_molfile})
 
@@ -442,6 +600,21 @@ def get_INCHI_for_patent(patent_id):
     conn.close()
 
     return jsonify({'inchies': inchi_for_patent})
+
+# UIPAC получение соединений в список
+@app.route('/get_UIPAC_for_patent/<int:patent_id>')
+@login_required
+def get_UIPAC_for_patent(patent_id):
+    conn = sqlite3.connect('patents.db')
+    cursor = conn.cursor()
+
+    cursor.execute('SELECT uipac FROM compounds WHERE id IN (SELECT compound_id FROM compoundsInPatent WHERE patent_id = ?) AND uipac != "not"', (patent_id,))
+    UIPAC_for_patent = cursor.fetchall()
+
+    conn.close()
+
+    return jsonify({'UIPACS': UIPAC_for_patent})
+
 
 @app.route('/get_patents_except/<int:patent_id>')
 @login_required
@@ -509,6 +682,21 @@ WHERE c.inChiName != "not"
     conn.close()
     return jsonify({'patents': patents_with_inchi})
 
+# получить патенты с UIPAC
+@app.route('/get_patents_with_UIPAC')
+def get_patents_with_UIPAC():
+    conn = sqlite3.connect('patents.db')
+    cursor = conn.cursor()
+    cursor.execute('''
+        SELECT DISTINCT p.id, p.name, p.link
+FROM patents p
+JOIN compoundsInPatent cp ON p.id = cp.patent_id
+JOIN compounds c ON cp.compound_id = c.id
+WHERE c.uipac != "not"
+    ''')
+    patents_with_UIPAC= cursor.fetchall()
+    conn.close()
+    return jsonify({'patents': patents_with_UIPAC})
 
 
 @app.route('/about')

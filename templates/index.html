@@ -81,6 +81,24 @@
                 </p>
             </div>
 
+            <!-- UIPAC-слайд -->
+            <div class="slick-slide">
+                <h1>UIPAC</h1>
+                <p>
+                    <label for="first_patent_id_UIPAC">Выберите первый патент:</label><br>
+                    <select name="first_patent_id_UIPAC" id="first_patent_id_UIPAC">
+                        <option value="">Выберите патент</option>
+                    </select>
+                </p>
+                <p>
+                    <label for="chem_input_UIPAC1">Выберите UIPAC для первого соединения:</label><br>
+                    <select name="chem_input_UIPAC1" id="chem_input_UIPAC1">
+                        <option value="">Выберите InChi</option>
+                    </select>
+                </p>
+            </div>
+
+
 
 
 
@@ -130,7 +148,7 @@
             <div class="slick-slide">
                 <h1>InChi</h1>
                 <p>
-                    <label for="second_patent_id_InChi">Выберите первый патент:</label><br>
+                    <label for="second_patent_id_InChi">Выберите второй патент:</label><br>
                     <select name="second_patent_id_InChi" id="second_patent_id_InChi">
                         <option value="">Выберите патент</option>
                     </select>
@@ -142,6 +160,24 @@
                     </select>
                 </p>
             </div>
+
+            <!-- UIPAC-слайд -->
+            <div class="slick-slide">
+                <h1>UIPAC</h1>
+                <p>
+                    <label for="second_patent_id_UIPAC">Выберите второй патент:</label><br>
+                    <select name="second_patent_id_UIPAC" id="second_patent_id_UIPAC">
+                        <option value="">Выберите патент</option>
+                    </select>
+                </p>
+                <p>
+                    <label for="chem_input_UIPAC2">Выберите UIPAC для второго соединения:</label><br>
+                    <select name="chem_input_UIPAC2" id="chem_input_UIPAC2">
+                        <option value="">Выберите UIPAC</option>
+                    </select>
+                </p>
+            </div>
+
 
         </div>
 
@@ -162,6 +198,10 @@
         <!-- значения InChi -->
         <input type="hidden" name="chem_input_InChi1_hidden" id="chem_input_InChi1_hidden">
         <input type="hidden" name="chem_input_InChi2_hidden" id="chem_input_InChi2_hidden">
+
+        <!-- значения UIPAC -->
+        <input type="hidden" name="chem_input_UIPAC1_hidden" id="chem_input_UIPAC1_hidden">
+        <input type="hidden" name="chem_input_UIPAC2_hidden" id="chem_input_UIPAC2_hidden">
 
 
 
@@ -224,6 +264,11 @@
     // Получаем значения для второго InChi
     var chem_input_InChi2_value = $('#chem_input_InChi2').val();
 
+    // Получаем значения для первого UIPAC
+    var chem_input_UIPAC1_value = $('#chem_input_UIPAC1').val();
+    // Получаем значения для второго UIPAC
+    var chem_input_UIPAC2_value = $('#chem_input_UIPAC2').val();
+
     // Записываем значения из всех слайдов в скрытую форму
     $('#molfile_path_hidden').val(molfile_path_value);
     $('#first_patent_id_SMILES_hidden').val(first_patent_id_SMILES_value);
@@ -235,6 +280,10 @@
     // Записываем значения в скрытые поля
     $('#chem_input_InChi1_hidden').val(chem_input_InChi1_value);
     $('#chem_input_InChi2_hidden').val(chem_input_InChi2_value);
+
+    $('#chem_input_UIPAC1_hidden').val(chem_input_UIPAC1_value);
+    $('#chem_input_UIPAC2_hidden').val(chem_input_UIPAC2_value);
+
 
     // Отправляем форму через AJAX
     var form_data = $(this).serialize();
@@ -294,6 +343,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
     var inChiPatentSelect2 = document.getElementById('second_patent_id_InChi');
     var inChiSelect2 = document.getElementById('chem_input_InChi2');
+
+
+    // переменные для UIPAC
+    var UIPACPatentSelect1 = document.getElementById('first_patent_id_UIPAC');
+    var UIPACSelect1 = document.getElementById('chem_input_UIPAC1');
+
+    var UIPACPatentSelect2 = document.getElementById('second_patent_id_UIPAC');
+    var UIPACSelect2 = document.getElementById('chem_input_UIPAC2');
 
 
 
@@ -412,6 +469,43 @@ document.addEventListener('DOMContentLoaded', function() {
             .catch(error => console.error('Error fetching patents:', error));
     }
 
+    // Функция для загрузки списка патентов для 7-го соединения(по сути, просто поля)
+    function load7PatentList() {
+        fetch('/get_patents_with_UIPAC')
+            .then(response => response.json())
+            .then(data => {
+                UIPACPatentSelect1.innerHTML = '<option value="">Выберите UIPAC патент</option>'; // Clear previous entries
+
+                if (data.patents.length > 0) {
+                    data.patents.forEach(function(patent) {
+                        var option = document.createElement('option');
+                        option.value = patent[0];
+                        option.textContent = patent[1];
+                        UIPACPatentSelect1.appendChild(option);
+                    });
+                }
+            })
+            .catch(error => console.error('Error fetching patents:', error));
+    }
+
+    // Функция для загрузки списка патентов для 8-го соединения(по сути, просто поля)
+    function load8PatentList() {
+        fetch('/get_patents_with_UIPAC')
+            .then(response => response.json())
+            .then(data => {
+                UIPACPatentSelect2.innerHTML = '<option value="">Выберите UIPAC патент</option>'; // Clear previous entries
+
+                if (data.patents.length > 0) {
+                    data.patents.forEach(function(patent) {
+                        var option = document.createElement('option');
+                        option.value = patent[0];
+                        option.textContent = patent[1];
+                        UIPACPatentSelect2.appendChild(option);
+                    });
+                }
+            })
+            .catch(error => console.error('Error fetching patents:', error));
+    }
 
 
     // Загрузка списка патентов для всех соединений при загрузке страницы
@@ -421,6 +515,8 @@ document.addEventListener('DOMContentLoaded', function() {
     load4PatentList();
     load5PatentList();
     load6PatentList();
+    load7PatentList();
+    load8PatentList();
 
     // добавление в первое поле значений в данном случае всех molfile в патенте
     firstPatentSelect.addEventListener('change', function() {
@@ -553,6 +649,51 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             })
             .catch(error => console.error('Error fetching inchi:', error));
+    });
+
+
+    // ЗАПОЛНЕНИЕ UIPAC
+
+    // первое соединение
+    UIPACPatentSelect1.addEventListener('change', function() {
+        var selectedPatentId = UIPACPatentSelect1.value;
+
+        fetch('/get_UIPAC_for_patent/' + selectedPatentId)
+            .then(response => response.json())
+            .then(data => {
+                UIPACSelect1.innerHTML = '<option value="">Выберите UIPAC</option>'; // Clear previous entries
+
+                if (data.UIPACS.length > 0) {
+                    data.UIPACS.forEach(function(UIPAC) {
+                        var option = document.createElement('option');
+                        option.value = UIPAC[0];
+                        option.textContent = UIPAC[0];
+                        UIPACSelect1.appendChild(option);
+                    });
+                }
+            })
+            .catch(error => console.error('Error fetching UIPAC:', error));
+    });
+
+    // второе соединение
+    UIPACPatentSelect2.addEventListener('change', function() {
+        var selectedPatentId = UIPACPatentSelect2.value;
+
+        fetch('/get_UIPAC_for_patent/' + selectedPatentId)
+            .then(response => response.json())
+            .then(data => {
+                UIPACSelect2.innerHTML = '<option value="">Выберите UIPAC</option>'; // Clear previous entries
+
+                if (data.UIPACS.length > 0) {
+                    data.UIPACS.forEach(function(UIPAC) {
+                        var option = document.createElement('option');
+                        option.value = UIPAC[0];
+                        option.textContent = UIPAC[0];
+                        UIPACSelect2.appendChild(option);
+                    });
+                }
+            })
+            .catch(error => console.error('Error fetching UIPAC:', error));
     });
 
 
