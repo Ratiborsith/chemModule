@@ -136,6 +136,8 @@ def logout():
 
 from flask import jsonify
 
+
+# функция с основными рассчетами
 @app.route('/process_comparison', methods=['POST'])
 @login_required
 def process_comparison():
@@ -144,16 +146,41 @@ def process_comparison():
     img_base64_1 = None
     img_base64_2 = None
     smiles_from_molfile = None
+    selected_second_patent_id = request.form.get('second_patent_id_hidden')
 
-    if 1:
-        selected_molfile_path = request.form.get('molfile_path')
-        selected_second_patent_id = request.form.get('second_patent_id')
-        chem_input2 = request.form.get('chem_input2')
+    # Получаем значения из скрытых полей формы
 
+    # номера текущих слайдов
+    slick1 = int(request.form.get('slick-active1'))  # на нулевом слайде MOL на единичном слайде SMILES ВСЕГДА на обоих слайдерах
+    slick2 = int(request.form.get('slick-active2'))     # на 3 слайде InChi
+
+    # значения изнутри слайдов
+
+    # MOL для 1-го
+    MOL1 = request.form.get('molfile_path_hidden')
+
+    # SMILES для 1-го
+    SMILES1 = request.form.get('chem_input1_hidden')
+
+    # INCHI для 1-го
+    INCHI1 = request.form.get('chem_input_InChi1_hidden')
+
+    # SMILES для 2-го
+    SMILES2 = request.form.get('chem_input2_hidden')
+
+    # MOL для 2-го
+    MOL2 = request.form.get('molfile_path2_hidden')
+
+    # INCHI для 2-го
+    INCHI2 = request.form.get('chem_input_InChi2_hidden')
+
+    if slick1 == 0 and slick2 == 0:
+        # сравнение MOL1 и MOL2
         try:
+            # формируем первую молекулу из МОЛОВ
             molfiles_dir = os.path.join(app.root_path)
-            selected_molfile_path = selected_molfile_path.replace('/', os.sep)
-            selected_molfile_abs_path = molfiles_dir + selected_molfile_path
+            MOL1 = MOL1.replace('/', os.sep)
+            selected_molfile_abs_path = molfiles_dir + MOL1
             with open(selected_molfile_abs_path, 'r') as molfile:
                 molfile_data = molfile.read()
                 molfile_content = molfile_data
@@ -161,7 +188,17 @@ def process_comparison():
             mol1 = Chem.MolFromMolBlock(molfile_content)
             smiles_from_molfile = molfile_to_smiles(molfile_content)
 
-            mol2 = Chem.MolFromSmiles(chem_input2)
+
+            # формируем вторую молекулу из МОЛОВ
+            molfiles_dir = os.path.join(app.root_path)
+            MOL2 = MOL2.replace('/', os.sep)
+            selected_molfile_abs_path = molfiles_dir + MOL2
+            with open(selected_molfile_abs_path, 'r') as molfile:
+                molfile_data = molfile.read()
+                molfile_content = molfile_data
+
+            mol2 = Chem.MolFromMolBlock(molfile_content)
+
 
             if mol1 is not None and mol2 is not None:
                 similarity = calculate_tanimoto_similarity(Chem.MolToMolBlock(mol1), Chem.MolToSmiles(mol2))
@@ -175,9 +212,186 @@ def process_comparison():
         except Exception as e:
             return jsonify({'error': str(e)})
 
-        return jsonify({'similarity': similarity, 'img1': img_base64_1, 'img2': img_base64_2, 'smiles_from_molfile': smiles_from_molfile})
 
-    return jsonify({'error': 'Form validation failed'})
+    elif slick1 == 0 and slick2 == 1:
+        # сравнение MOL1 и SMILES2
+        try:
+            molfiles_dir = os.path.join(app.root_path)
+            MOL1 = MOL1.replace('/', os.sep)
+            selected_molfile_abs_path = molfiles_dir + MOL1
+            with open(selected_molfile_abs_path, 'r') as molfile:
+                molfile_data = molfile.read()
+                molfile_content = molfile_data
+
+            mol1 = Chem.MolFromMolBlock(molfile_content)
+            smiles_from_molfile = molfile_to_smiles(molfile_content)
+
+            mol2 = Chem.MolFromSmiles(SMILES2)
+
+            if mol1 is not None and mol2 is not None:
+                similarity = calculate_tanimoto_similarity(Chem.MolToMolBlock(mol1), Chem.MolToSmiles(mol2))
+
+                img1 = Draw.MolToImage(mol1)
+                img_base64_1 = img_to_base64(img1)
+
+                img2 = Draw.MolToImage(mol2)
+                img_base64_2 = img_to_base64(img2)
+
+        except Exception as e:
+            return jsonify({'error': str(e)})
+
+    elif slick1 == 1 and slick2 == 0:
+        # сравнение SMILES1 и MOL2
+        try:
+            molfiles_dir = os.path.join(app.root_path)
+            MOL2 = MOL2.replace('/', os.sep)
+            selected_molfile_abs_path = molfiles_dir + MOL2
+            with open(selected_molfile_abs_path, 'r') as molfile:
+                molfile_data = molfile.read()
+                molfile_content = molfile_data
+
+            mol2 = Chem.MolFromMolBlock(molfile_content)
+            smiles_from_molfile = molfile_to_smiles(molfile_content)
+
+            mol1 = Chem.MolFromSmiles(SMILES1)
+
+            if mol1 is not None and mol2 is not None:
+                similarity = calculate_tanimoto_similarity(Chem.MolToMolBlock(mol1), Chem.MolToSmiles(mol2))
+
+                img1 = Draw.MolToImage(mol1)
+                img_base64_1 = img_to_base64(img1)
+
+                img2 = Draw.MolToImage(mol2)
+                img_base64_2 = img_to_base64(img2)
+
+        except Exception as e:
+            return jsonify({'error': str(e)})
+
+    elif slick1 == 1 and slick2 == 1:
+        # сравнение SMILES1 и SMILES2
+        mol1 = Chem.MolFromSmiles(SMILES1)
+        smiles_from_molfile = SMILES1   # ПОТОМ УБРАТЬ
+
+        mol2 = Chem.MolFromSmiles(SMILES2)
+
+        if mol1 is not None and mol2 is not None:
+            similarity = calculate_tanimoto_similarity(Chem.MolToMolBlock(mol1), Chem.MolToSmiles(mol2))
+
+            img1 = Draw.MolToImage(mol1)
+            img_base64_1 = img_to_base64(img1)
+
+            img2 = Draw.MolToImage(mol2)
+            img_base64_2 = img_to_base64(img2)
+
+    elif slick1 == 2 and slick2 == 1:
+        # INCHI1 и SMILES2
+        mol1 = Chem.MolFromInchi(INCHI1)
+        mol2 = Chem.MolFromSmiles(SMILES2)
+        smiles_from_molfile = "NOTHING"
+
+        if mol1 is not None and mol2 is not None:
+            similarity = calculate_tanimoto_similarity(Chem.MolToMolBlock(mol1), Chem.MolToSmiles(mol2))
+
+            img1 = Draw.MolToImage(mol1)
+            img_base64_1 = img_to_base64(img1)
+
+            img2 = Draw.MolToImage(mol2)
+            img_base64_2 = img_to_base64(img2)
+
+
+    elif slick1 == 2 and slick2 == 0:
+        # INCHI1 и MOL2
+        try:
+            molfiles_dir = os.path.join(app.root_path)
+            MOL2 = MOL2.replace('/', os.sep)
+            selected_molfile_abs_path = molfiles_dir + MOL2
+            with open(selected_molfile_abs_path, 'r') as molfile:
+                molfile_data = molfile.read()
+                molfile_content = molfile_data
+
+            mol2 = Chem.MolFromMolBlock(molfile_content)
+
+            mol1 = Chem.MolFromInchi(INCHI1)
+            smiles_from_molfile = "NOTHING"
+
+            if mol1 is not None and mol2 is not None:
+                similarity = calculate_tanimoto_similarity(Chem.MolToMolBlock(mol1), Chem.MolToSmiles(mol2))
+
+                img1 = Draw.MolToImage(mol1)
+                img_base64_1 = img_to_base64(img1)
+
+                img2 = Draw.MolToImage(mol2)
+                img_base64_2 = img_to_base64(img2)
+
+        except Exception as e:
+            return jsonify({'error': str(e)})
+
+
+
+    elif slick1 == 1 and slick2 == 2:
+        # SMILES1 и INCHI2
+        mol1 = Chem.MolFromSmiles(SMILES1)
+        mol2 = Chem.MolFromInchi(INCHI2)
+        smiles_from_molfile = "NOTHING"
+
+        if mol1 is not None and mol2 is not None:
+            similarity = calculate_tanimoto_similarity(Chem.MolToMolBlock(mol1), Chem.MolToSmiles(mol2))
+
+            img1 = Draw.MolToImage(mol1)
+            img_base64_1 = img_to_base64(img1)
+
+            img2 = Draw.MolToImage(mol2)
+            img_base64_2 = img_to_base64(img2)
+
+
+
+    elif slick1 == 0 and slick2 == 2:
+        # MOL1 и INCHI2
+        try:
+            molfiles_dir = os.path.join(app.root_path)
+            MOL1 = MOL1.replace('/', os.sep)
+            selected_molfile_abs_path = molfiles_dir + MOL1
+            with open(selected_molfile_abs_path, 'r') as molfile:
+                molfile_data = molfile.read()
+                molfile_content = molfile_data
+
+            mol1 = Chem.MolFromMolBlock(molfile_content)
+            smiles_from_molfile = molfile_to_smiles(molfile_content)
+
+            mol2 = Chem.MolFromInchi(INCHI2)
+
+            if mol1 is not None and mol2 is not None:
+                similarity = calculate_tanimoto_similarity(Chem.MolToMolBlock(mol1), Chem.MolToSmiles(mol2))
+
+                img1 = Draw.MolToImage(mol1)
+                img_base64_1 = img_to_base64(img1)
+
+                img2 = Draw.MolToImage(mol2)
+                img_base64_2 = img_to_base64(img2)
+
+        except Exception as e:
+            return jsonify({'error': str(e)})
+
+    elif slick1 == 2 and slick2 == 2:
+        # InChi и InChi
+        mol1 = Chem.MolFromInchi(INCHI1)
+        mol2 = Chem.MolFromInchi(INCHI2)
+        smiles_from_molfile = "NOTHING"
+
+        if mol1 is not None and mol2 is not None:
+            similarity = calculate_tanimoto_similarity(Chem.MolToMolBlock(mol1), Chem.MolToSmiles(mol2))
+
+            img1 = Draw.MolToImage(mol1)
+            img_base64_1 = img_to_base64(img1)
+
+            img2 = Draw.MolToImage(mol2)
+            img_base64_2 = img_to_base64(img2)
+
+
+
+    return jsonify({'similarity': similarity, 'img1': img_base64_1, 'img2': img_base64_2, 'smiles_from_molfile': smiles_from_molfile})
+
+
 
 
 # страница сравнения химических соединен
@@ -215,6 +429,19 @@ def get_smiles_for_patent(patent_id):
     conn.close()
 
     return jsonify({'smiles': [smile[0] for smile in smiles_for_patent]})
+
+@app.route('/get_INCHI_for_patent/<int:patent_id>')
+@login_required
+def get_INCHI_for_patent(patent_id):
+    conn = sqlite3.connect('patents.db')
+    cursor = conn.cursor()
+
+    cursor.execute('SELECT inChiName FROM compounds WHERE id IN (SELECT compound_id FROM compoundsInPatent WHERE patent_id = ?) AND inChiName != "not"', (patent_id,))
+    inchi_for_patent = cursor.fetchall()
+
+    conn.close()
+
+    return jsonify({'inchies': inchi_for_patent})
 
 @app.route('/get_patents_except/<int:patent_id>')
 @login_required
@@ -265,6 +492,23 @@ WHERE c.smilesName != "not"
     patents_with_smiles = cursor.fetchall()
     conn.close()
     return jsonify({'patents': patents_with_smiles})
+
+# получить патенты с InChi
+@app.route('/get_patents_with_INCHI')
+def get_patents_with_INCHI():
+    conn = sqlite3.connect('patents.db')
+    cursor = conn.cursor()
+    cursor.execute('''
+        SELECT DISTINCT p.id, p.name, p.link
+FROM patents p
+JOIN compoundsInPatent cp ON p.id = cp.patent_id
+JOIN compounds c ON cp.compound_id = c.id
+WHERE c.inChiName != "not"
+    ''')
+    patents_with_inchi= cursor.fetchall()
+    conn.close()
+    return jsonify({'patents': patents_with_inchi})
+
 
 
 @app.route('/about')

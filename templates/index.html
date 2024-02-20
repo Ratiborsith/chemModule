@@ -3,6 +3,8 @@
 <head>
     <title>Chemical Structure Comparison</title>
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='styles.css') }}">
+    <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/slick-carousel/1.8.1/slick.css"/>
+    <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/slick-carousel/1.8.1/slick-theme.css"/>
 </head>
 <body>
 <header>
@@ -22,37 +24,149 @@
     <form method="POST" class="comparison-form" >
         {{ form.hidden_tag() }}
 
-        <p>
-            <label for="second_patent_id">Выберите первый патент:</label><br>
-            {{ form.patent_id(id="first_patent_id") }}<br>
-            {% if form.patent_id.errors %}
-                {% for error in form.patent_id.errors %}
-                    <span style="color: red;">{{ error }}</span><br>
-                {% endfor %}
-            {% endif %}
-        </p>
+        <!-- 1-ый слайдер -->
+        <div class="content-slider">
+            <!-- MOL-слайд -->
+            <div class="slick-slide">
+                <h1>Molfile</h1>
+                <p>
+                    <label for="first_patent_id">Выберите первый патент:</label><br>
+                    {{ form.patent_id(id="first_patent_id") }}<br>
+                    {% if form.patent_id.errors %}
+                        {% for error in form.patent_id.errors %}
+                            <span style="color: red;">{{ error }}</span><br>
+                        {% endfor %}
+                    {% endif %}
+                </p>
 
-        <p>
-            <label for="molfile_path">Выберите molfile:</label><br>
-            <select name="molfile_path" id="molfile_path">
-                <option value="">Выберите molfile</option>
-            </select>
-        </p>
+                <p>
+                    <label for="molfile_path">Выберите molfile:</label><br>
+                    <select name="molfile_path" id="molfile_path">
+                        <option value="">Выберите molfile</option>
+                    </select>
+                </p>
+            </div>
 
-        <p>
-            <label for="second_patent_id">Выберите второй патент:</label><br>
-            <select name="second_patent_id" id="second_patent_id">
-                <option value="">Выберите патент</option>
-            </select>
-        </p>
+            <!-- SMILES-слайд -->
+            <div class="slick-slide">
+                <h1>SMILES</h1>
+                <p>
+                    <label for="first_patent_id_SMILES">Выберите первый патент:</label><br>
+                    <select name="first_patent_id_SMILES" id="first_patent_id_SMILES">
+                        <option value="">Выберите патент</option>
+                    </select>
+                </p>
+                <p>
+                    <label for="chem_input1">Выберите SMILES для первого соединения:</label><br>
+                    <select name="chem_input1" id="chem_input1">
+                        <option value="">Выберите SMILES</option>
+                    </select>
+                </p>
+            </div>
 
-        <p>
-            <label for="chem_input2">Выберите SMILES для второго соединения:</label><br>
-            <select name="chem_input2" id="chem_input2">
-                <option value="">Выберите SMILES</option>
-            </select>
-        </p>
+            <!-- InChi-слайд -->
+            <div class="slick-slide">
+                <h1>InChi</h1>
+                <p>
+                    <label for="first_patent_id_InChi">Выберите первый патент:</label><br>
+                    <select name="first_patent_id_InChi" id="first_patent_id_InChi">
+                        <option value="">Выберите патент</option>
+                    </select>
+                </p>
+                <p>
+                    <label for="chem_input_InChi1">Выберите InChi для первого соединения:</label><br>
+                    <select name="chem_input_InChi1" id="chem_input_InChi1">
+                        <option value="">Выберите InChi</option>
+                    </select>
+                </p>
+            </div>
+
+
+
+
+        </div>
+
+
+
+        <!-- 2-ой слайдер -->
+        <div class="content-slider">
+            <!-- MOL-слайд -->
+            <div class="slick-slide">
+                <h1>Molfile</h1>
+                <p>
+                    <label for="second_patent_id_2">Выберите второй патент:</label><br>
+                    <select name="second_patent_id_2" id="second_patent_id_2">
+                        <option value="">Выберите патент</option>
+                    </select>
+                </p>
+
+                <p>
+                    <label for="molfile_path2">Выберите Molfile для второго соединения:</label><br>
+                    <select name="molfile_path2" id="molfile_path2">
+                        <option value="">Выберите SMILES</option>
+                    </select>
+                </p>
+            </div>
+
+            <!-- SMILES-слайд -->
+            <div class="slick-slide">
+                <h1>SMILES</h1>
+                <p>
+                    <label for="second_patent_id">Выберите второй патент:</label><br>
+                    <select name="second_patent_id" id="second_patent_id">
+                        <option value="">Выберите патент</option>
+                    </select>
+                </p>
+
+                <p>
+                    <label for="chem_input2">Выберите SMILES для второго соединения:</label><br>
+                    <select name="chem_input2" id="chem_input2">
+                        <option value="">Выберите SMILES</option>
+                    </select>
+                </p>
+            </div>
+
+            <!-- InChi-слайд -->
+            <div class="slick-slide">
+                <h1>InChi</h1>
+                <p>
+                    <label for="second_patent_id_InChi">Выберите первый патент:</label><br>
+                    <select name="second_patent_id_InChi" id="second_patent_id_InChi">
+                        <option value="">Выберите патент</option>
+                    </select>
+                </p>
+                <p>
+                    <label for="chem_input_InChi2">Выберите InChi для первого соединения:</label><br>
+                    <select name="chem_input_InChi2" id="chem_input_InChi2">
+                        <option value="">Выберите InChi</option>
+                    </select>
+                </p>
+            </div>
+
+        </div>
+
+
+        <!-- запись текущих слайдов -->
+        <input type="hidden" name="slick-active1" id="slick-active1">
+        <input type="hidden" name="slick-active2" id="slick-active2">
+
+        <!-- значения все из слайдов -->
+        <input type="hidden" name="molfile_path_hidden" id="molfile_path_hidden">
+        <input type="hidden" name="first_patent_id_SMILES_hidden" id="first_patent_id_SMILES_hidden">
+        <input type="hidden" name="chem_input1_hidden" id="chem_input1_hidden">
+        <input type="hidden" name="second_patent_id_2_hidden" id="second_patent_id_2_hidden">
+        <input type="hidden" name="molfile_path2_hidden" id="molfile_path2_hidden">
+        <input type="hidden" name="second_patent_id_hidden" id="second_patent_id_hidden">
+        <input type="hidden" name="chem_input2_hidden" id="chem_input2_hidden">
+
+        <!-- значения InChi -->
+        <input type="hidden" name="chem_input_InChi1_hidden" id="chem_input_InChi1_hidden">
+        <input type="hidden" name="chem_input_InChi2_hidden" id="chem_input_InChi2_hidden">
+
+
+
         <p>{{ form.submit() }}</p>
+
     </form>
 
     <div id="results">
@@ -60,60 +174,131 @@
     </div>
 </div>
 
+<!-- для слайдера -->
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/slick-carousel/1.8.1/slick.min.js"></script>
+    <script>
+    $('.content-slider').on('afterChange', function(event, slick, currentSlide){
+    $('#slick-active').val(currentSlide);
+});
+
     $(document).ready(function() {
-        $('.comparison-form').submit(function(event) {
-            event.preventDefault();
-            var form_data = $(this).serialize();
-            $.ajax({
-                type: 'POST',
-                url: '/process_comparison',
-                data: form_data,
-                dataType: 'json',
-                success: function(response) {
-                    if (response.error) {
-                        console.error('Error:', response.error);
-                    } else {
-                        var html = '';
-
-                        if (response.similarity !== null) {
-                            html += '<p>Tanimoto similarity: ' + response.similarity + '</p>';
-                        }
-                        if (response.img1) {
-                            html += '<p>Molecule from molfile:</p>';
-                            html += '<img src="data:image/png;base64,' + response.img1 + '" alt="Molecule 1 Image">';
-                            if (response.smiles_from_molfile) {
-                                html += '<p>SMILES from molfile: ' + response.smiles_from_molfile + '</p>';
-                            }
-                        }
-                        if (response.img2) {
-                            html += '<p>Molecule from SMILES:</p>';
-                            html += '<img src="data:image/png;base64,' + response.img2 + '" alt="Molecule 2 Image">';
-                        }
-
-                        $('#results').html(html);
-                    }
-                },
-                error: function(error) {
-                    console.log('Error:', error);
-                }
-            });
+        // Инициализация слайдера
+        $('.content-slider').slick({
+            infinite: true,
+            slidesToShow: 1,
+            slidesToScroll: 1,
+            dots: true,
+            autoplay: false,
+            autoplaySpeed: 3000,
+            arrows: true
         });
+
+
+
+
+        // Обработка события отправки формы через AJAX
+    $('.comparison-form').submit(function(event) {
+    event.preventDefault(); // Предотвращаем стандартное поведение отправки формы
+
+    // Получаем значения текущих слайдов
+            var currentSlide1 = $('.content-slider:eq(0)').slick('slickCurrentSlide');
+            var currentSlide2 = $('.content-slider:eq(1)').slick('slickCurrentSlide');
+
+
+             // Записываем значения текущих слайдов в скрытые поля формы
+            $('#slick-active1').val(currentSlide1);
+            $('#slick-active2').val(currentSlide2);
+
+
+    // Собираем значения из всех слайдов
+    var molfile_path_value = $('#molfile_path').val();
+    var first_patent_id_SMILES_value = $('#first_patent_id_SMILES').val();
+    var chem_input1_value = $('#chem_input1').val();
+    var second_patent_id_2_value = $('#second_patent_id_2').val();
+    var molfile_path2_value = $('#molfile_path2').val();
+    var second_patent_id_value = $('#second_patent_id').val();
+    var chem_input2_value = $('#chem_input2').val();
+    // Получаем значения для первого InChi
+    var chem_input_InChi1_value = $('#chem_input_InChi1').val();
+    // Получаем значения для второго InChi
+    var chem_input_InChi2_value = $('#chem_input_InChi2').val();
+
+    // Записываем значения из всех слайдов в скрытую форму
+    $('#molfile_path_hidden').val(molfile_path_value);
+    $('#first_patent_id_SMILES_hidden').val(first_patent_id_SMILES_value);
+    $('#chem_input1_hidden').val(chem_input1_value);
+    $('#second_patent_id_2_hidden').val(second_patent_id_2_value);
+    $('#molfile_path2_hidden').val(molfile_path2_value);
+    $('#second_patent_id_hidden').val(second_patent_id_value);
+    $('#chem_input2_hidden').val(chem_input2_value);
+    // Записываем значения в скрытые поля
+    $('#chem_input_InChi1_hidden').val(chem_input_InChi1_value);
+    $('#chem_input_InChi2_hidden').val(chem_input_InChi2_value);
+
+    // Отправляем форму через AJAX
+    var form_data = $(this).serialize();
+    $.ajax({
+        type: 'POST',
+        url: '/process_comparison',
+        data: form_data,
+        dataType: 'json',
+        success: function(response) {
+            if (response.error) {
+                console.error('Error:', response.error);
+            } else {
+                var html = '';
+
+                if (response.similarity !== null) {
+                    html += '<p>Tanimoto similarity: ' + response.similarity + '</p>';
+                }
+                if (response.img1) {
+                    html += '<p>Molecule from molfile:</p>';
+                    html += '<img src="data:image/png;base64,' + response.img1 + '" alt="Molecule 1 Image">';
+                    if (response.smiles_from_molfile) {
+                        html += '<p>SMILES from molfile: ' + response.smiles_from_molfile + '</p>';
+                    }
+                }
+                if (response.img2) {
+                    html += '<p>Molecule from SMILES:</p>';
+                    html += '<img src="data:image/png;base64,' + response.img2 + '" alt="Molecule 2 Image">';
+                }
+
+                $('#results').html(html);
+            }
+        },
+        error: function(error) {
+            console.log('Error:', error);
+        }
+    });
+});
+
     });
 </script>
 
-
+<!-- после нажатия на compare -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     var firstPatentSelect = document.getElementById('first_patent_id');
+    var firstPatentSelect_SMILES = document.getElementById('first_patent_id_SMILES');
     var molfileSelect = document.getElementById('molfile_path');
+    var chem_input1Select = document.getElementById('chem_input1');
     var secondPatentSelect = document.getElementById('second_patent_id');
     var chemInput2Select = document.getElementById('chem_input2');
+    var secondPatentSelect2 = document.getElementById('second_patent_id_2');
+    var molfileSelect2 = document.getElementById('molfile_path2');
+
+    // переменные для InChi
+    var inChiPatentSelect1 = document.getElementById('first_patent_id_InChi');
+    var inChiSelect1 = document.getElementById('chem_input_InChi1');
+
+    var inChiPatentSelect2 = document.getElementById('second_patent_id_InChi');
+    var inChiSelect2 = document.getElementById('chem_input_InChi2');
+
+
 
     // Функция для загрузки списка патентов для первого соединения
-    function loadFirstPatentList() {
+    function load1PatentList() {
         fetch('/get_patents_with_molfiles')
             .then(response => response.json())
             .then(data => {
@@ -132,7 +317,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Функция для загрузки списка патентов для второго соединения
-    function loadSecondPatentList(selectedPatentId) {
+    function load2PatentList() {
         fetch('/get_patents_with_smiles')
             .then(response => response.json())
             .then(data => {
@@ -150,10 +335,94 @@ document.addEventListener('DOMContentLoaded', function() {
             .catch(error => console.error('Error fetching patents:', error));
     }
 
-    // Загрузка списка патентов для обоих соединений при загрузке страницы
-    loadFirstPatentList();
-    loadSecondPatentList();
 
+    // Функция для загрузки списка патентов для третьего соединения(по сути, просто поля)
+    function load3PatentList(selectedPatentId) {
+        fetch('/get_patents_with_smiles')
+            .then(response => response.json())
+            .then(data => {
+                firstPatentSelect_SMILES.innerHTML = '<option value="">Выберите патент</option>'; // Clear previous entries
+
+                if (data.patents.length > 0) {
+                    data.patents.forEach(function(patent) {
+                        var option = document.createElement('option');
+                        option.value = patent[0];
+                        option.textContent = patent[1];
+                        firstPatentSelect_SMILES.appendChild(option);
+                    });
+                }
+            })
+            .catch(error => console.error('Error fetching patents:', error));
+    }
+
+    // Функция для загрузки списка MOL патентов для второго соединения
+    function load4PatentList() {
+        fetch('/get_patents_with_molfiles')
+            .then(response => response.json())
+            .then(data => {
+                secondPatentSelect2.innerHTML = '<option value="">Выберите патент</option>'; // Clear previous entries
+
+                if (data.patents.length > 0) {
+                    data.patents.forEach(function(patent) {
+                        var option = document.createElement('option');
+                        option.value = patent[0];
+                        option.textContent = patent[1];
+                        secondPatentSelect2.appendChild(option);
+                    });
+                }
+            })
+            .catch(error => console.error('Error fetching patents:', error));
+    }
+
+    // Функция для загрузки списка патентов для пятого соединения(по сути, просто поля)
+    function load5PatentList() {
+        fetch('/get_patents_with_INCHI')
+            .then(response => response.json())
+            .then(data => {
+                inChiPatentSelect1.innerHTML = '<option value="">Выберите инчи патент</option>'; // Clear previous entries
+
+                if (data.patents.length > 0) {
+                    data.patents.forEach(function(patent) {
+                        var option = document.createElement('option');
+                        option.value = patent[0];
+                        option.textContent = patent[1];
+                        inChiPatentSelect1.appendChild(option);
+                    });
+                }
+            })
+            .catch(error => console.error('Error fetching patents:', error));
+    }
+
+    // Функция для загрузки списка патентов для пятого соединения(по сути, просто поля)
+    function load6PatentList() {
+        fetch('/get_patents_with_INCHI')
+            .then(response => response.json())
+            .then(data => {
+                inChiPatentSelect2.innerHTML = '<option value="">Выберите инчи патент</option>'; // Clear previous entries
+
+                if (data.patents.length > 0) {
+                    data.patents.forEach(function(patent) {
+                        var option = document.createElement('option');
+                        option.value = patent[0];
+                        option.textContent = patent[1];
+                        inChiPatentSelect2.appendChild(option);
+                    });
+                }
+            })
+            .catch(error => console.error('Error fetching patents:', error));
+    }
+
+
+
+    // Загрузка списка патентов для всех соединений при загрузке страницы
+    load1PatentList();
+    load2PatentList();
+    load3PatentList();
+    load4PatentList();
+    load5PatentList();
+    load6PatentList();
+
+    // добавление в первое поле значений в данном случае всех molfile в патенте
     firstPatentSelect.addEventListener('change', function() {
         var selectedPatentId = firstPatentSelect.value;
 
@@ -173,10 +442,10 @@ document.addEventListener('DOMContentLoaded', function() {
             })
             .catch(error => console.error('Error fetching molfiles:', error));
 
-        // При изменении первого патента загружаем список патентов для второго соединения
-        loadSecondPatentList(selectedPatentId);
+
     });
 
+    // добавление всех smiles формул в патенте второго поля
     secondPatentSelect.addEventListener('change', function() {
         var selectedSecondPatentId = secondPatentSelect.value;
 
@@ -196,9 +465,103 @@ document.addEventListener('DOMContentLoaded', function() {
             })
             .catch(error => console.error('Error fetching smiles:', error));
     });
+
+    // добавление всех smiles формул в патенте третьего поля
+    firstPatentSelect_SMILES.addEventListener('change', function() {
+        var selectedThirdPatentId = firstPatentSelect_SMILES.value;
+
+        fetch('/get_smiles_for_patent/' + selectedThirdPatentId)
+            .then(response => response.json())
+            .then(data => {
+                chem_input1Select.innerHTML = '<option value="">Выберите SMILES</option>'; // Clear previous entries
+
+                if (data.smiles.length > 0) {
+                    data.smiles.forEach(function(smiles) {
+                        var option = document.createElement('option');
+                        option.value = smiles;
+                        option.textContent = smiles;
+                        chem_input1Select.appendChild(option);
+                    });
+                }
+            })
+            .catch(error => console.error('Error fetching smiles:', error));
+    });
+
+
+    // добавление в четвертое поле значений( в данном случае всех molfile в патенте во втором соединении)
+    secondPatentSelect2.addEventListener('change', function() {
+        var selectedPatentId = secondPatentSelect2.value;
+
+        fetch('/get_molfiles_for_patent/' + selectedPatentId)
+            .then(response => response.json())
+            .then(data => {
+                molfileSelect2.innerHTML = '<option value="">Выберите molfile</option>'; // Clear previous entries
+
+                if (data.molfiles.length > 0) {
+                    data.molfiles.forEach(function(molfile) {
+                        var option = document.createElement('option');
+                        option.value = molfile[0];
+                        option.textContent = molfile[0];
+                        molfileSelect2.appendChild(option);
+                    });
+                }
+            })
+            .catch(error => console.error('Error fetching molfiles:', error));
+
+
+    });
+
+    // ЗАПОЛНЕНИЕ INCHI
+
+    // первое соединение
+    inChiPatentSelect1.addEventListener('change', function() {
+        var selectedPatentId = inChiPatentSelect1.value;
+
+        fetch('/get_INCHI_for_patent/' + selectedPatentId)
+            .then(response => response.json())
+            .then(data => {
+                inChiSelect1.innerHTML = '<option value="">Выберите InChi</option>'; // Clear previous entries
+
+                if (data.inchies.length > 0) {
+                    data.inchies.forEach(function(inchi) {
+                        var option = document.createElement('option');
+                        option.value = inchi[0];
+                        option.textContent = inchi[0];
+                        inChiSelect1.appendChild(option);
+                    });
+                }
+            })
+            .catch(error => console.error('Error fetching inchi:', error));
+    });
+
+    // второе соединение
+    inChiPatentSelect2.addEventListener('change', function() {
+        var selectedPatentId = inChiPatentSelect2.value;
+
+        fetch('/get_INCHI_for_patent/' + selectedPatentId)
+            .then(response => response.json())
+            .then(data => {
+                inChiSelect2.innerHTML = '<option value="">Выберите InChi</option>'; // Clear previous entries
+
+                if (data.inchies.length > 0) {
+                    data.inchies.forEach(function(inchi) {
+                        var option = document.createElement('option');
+                        option.value = inchi[0];
+                        option.textContent = inchi[0];
+                        inChiSelect2.appendChild(option);
+                    });
+                }
+            })
+            .catch(error => console.error('Error fetching inchi:', error));
+    });
+
+
 });
 
 
+
 </script>
+
+
 </body>
 </html>
