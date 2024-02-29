@@ -38,7 +38,7 @@ def extract_chemical_info(html_content):
 
 # Main function
 def main():
-    url = "https://patents.google.com/patent/US8980879B2"
+    url = "https://patents.google.com/patent/US20230136730A1"
     webpage_content = fetch_webpage(url)
     if webpage_content:
         chemical_info = extract_chemical_info(webpage_content)

@@ -1,5 +1,7 @@
 from rdkit import Chem
-from rdkit.Chem import AllChem, DataStructs
+from rdkit.Chem import Draw, AllChem, DataStructs
+
+from glyles import convert
 
 import cirpy    # библиотека для обработки uipac
 def calculate_tanimoto_similarity(molecule1, molecule2):
@@ -19,16 +21,31 @@ def calculate_tanimoto_similarity(molecule1, molecule2):
 
     # Calculate Tanimoto similarity
     similarity = DataStructs.TanimotoSimilarity(fp1, fp2)
+    img1 = Draw.MolToImage(mol1)
+
+    img2 = Draw.MolToImage(mol2)
+
+    # Отображение изображений
+    img1.show()
+    img2.show()
 
     return similarity
 
 
 # представление structural formula
-smilesMol1 = str(cirpy.resolve('Methyl 2-(4-(2-(((butylthio)methyl)thio)-3-cyano-6-(thiazol-2-yl)pyridin-4-yl)phenoxy)acetate', 'smiles'))
+IUPAC1MOL1 = '3-[2-(butylsulfanylmethylsulfanyl)-3-cyano-6-(1,3-thiazol-2-yl)pyridin-4-yl]-N,N-dimethylbenzamide'
+smilesMol1 = str(cirpy.resolve(IUPAC1MOL1, 'smiles'))
+IUPAC2Mol1 = str(cirpy.resolve(smilesMol1, 'iupac_name'))
+print(IUPAC1MOL1)
+print(IUPAC2Mol1)
 print(smilesMol1)
 print("C(C(=O)O)N")
 
-print(calculate_tanimoto_similarity(smilesMol1, "C(C(=O)O)N"))
+#print(calculate_tanimoto_similarity(smilesMol1, "C(C(=O)O)N"))
+
+print(calculate_tanimoto_similarity("CCCS(=O)C1=C(C2=C(C=C(C3=NC=CS3)N=C2S1)C4=CC=C(C=C4)CO)N", "CCCCS(=O)C1=C(C2=C(C=C(C3=NC=CS3)N=C2S1)C4=CC=C(C=C4)CO)N"))
+
+
 
 # структурная - это графически. Надо просто натренировать модель!!!!!!!!!
 # молекулярная не нужна
