@@ -11,7 +11,246 @@ from wtforms import StringField, SubmitField, FileField
 from wtforms.validators import DataRequired
 from wtforms import SelectField
 import cirpy    # библиотека для обработки uipac
+from flask import render_template_string
 
+import time
+from selenium import webdriver
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.common.by import By
+import urllib.request
+from selenium.common.exceptions import TimeoutException
+import requests
+import re
+from bs4 import BeautifulSoup
+
+import io
+import sys
+
+
+# функции для парсинга
+
+
+def get_patent_id(cursor, patent_number):
+    cursor.execute("SELECT id FROM patents WHERE PatentNumber = ?", (patent_number,))
+    result = cursor.fetchone()
+    if result:
+        return result[0]
+    else:
+        return None
+
+
+def download_image(url, filename, max_retries=3):
+    attempt = 0
+    while attempt < max_retries:
+        try:
+            urllib.request.urlretrieve(url, filename)
+            print(f"Image saved: {filename}")
+            return
+        except urllib.error.URLError as e:
+            print(f"URL error occurred when trying to retrieve {url}: {e}")
+            attempt += 1
+            time.sleep(2)  # Wait 2 seconds before retrying
+        except Exception as e:
+            print(f"An error occurred when trying to retrieve {url}: {e}")
+            attempt += 1
+            time.sleep(2)
+    print(f"Failed to download image after {max_retries} attempts.")
+
+
+# Function to fetch webpage content
+def fetch_webpage(url):
+    response = requests.get(url)
+    if response.status_code == 200:
+        return response.text
+    else:
+        print("Failed to fetch webpage")
+        return None
+
+# Function to extract chemical formulas from HTML content
+def extract_chemical_info(html_content):
+    soup = BeautifulSoup(html_content, 'html.parser')
+    chemical_info = {}
+    # Find all li elements with itemprop="match" attribute
+    li_elements = soup.find_all('li', itemprop='match')
+    for li in li_elements:
+        # Find span elements with relevant itemprop values
+        domain_span = li.find('span', itemprop='domain')
+        name_span = li.find('span', itemprop='name')
+        smiles_span = li.find('span', itemprop='smiles')
+        # Check if all relevant information is present and domain is "Chemical compound"
+        if domain_span and domain_span.text.strip() == "Chemical compound" and name_span and smiles_span:
+            domain = domain_span.text.strip()
+            name = name_span.text.strip()
+            smiles = smiles_span.text.strip()
+            # Use regular expressions to identify types of formulas
+            if re.match(r"^[^=;]*$", name):  # UIPAC
+                chemical_info.setdefault("UIPAC", []).append(name)
+            elif re.match(r'^[A-Za-z0-9@+\-\[\]\(\)\\\/%=#]+$', name):  # SMILES
+                chemical_info.setdefault("SMILES", []).append(smiles)
+            else:  # compoundName
+                chemical_info.setdefault("compoundName", []).append(name)
+    return chemical_info
+
+# Main function
+def parse_patent(patent_number_url):
+
+    stdout = sys.stdout
+    sys.stdout = io.StringIO()
+
+    # сначала парсим все uipac - представления, а также текстовые, если встретятся
+    url = f"https://patents.google.com/patent/{patent_number_url}"
+
+    uipac_list = []
+    webpage_content = fetch_webpage(url)
+    if webpage_content:
+        chemical_info = extract_chemical_info(webpage_content)
+        # Print by the specified order
+        i = 0
+        for type_name in ["SMILES", "UIPAC", "compoundName"]:
+
+            if type_name == "UIPAC":
+                print(type_name + ":")
+                for formula in chemical_info[type_name]:
+                    print(formula)
+                    uipac_list.append(formula)
+                    i = i + 1
+
+
+        print(f"Количество найденных формул: {i}")
+
+
+    # Далее парсим все структурные представления формул, которые есть в патенте
+
+    url = "https://patents.google.com/"
+    chrome_options = webdriver.ChromeOptions()
+    chrome_options.add_argument("--headless")  # Runs Chrome in headless mode.
+    chrome_options.add_argument(
+        "--disable-gpu")  # Disables GPU hardware acceleration. If software renderer is not in place, then the headless browser will not launch on Windows.
+    chrome_options.add_argument(
+        "--no-sandbox")  # Bypass OS security model. This can be required if running as root on Linux.
+    chrome_options.add_argument("--disable-dev-shm-usage")  # Overcome limited resource problems.
+
+    service = Service()
+    browser = webdriver.Chrome(service=service, options=chrome_options)
+    browser.get(url)
+
+    patent_name = patent_number_url
+
+    main_directory = "Patent_images"
+    if not os.path.exists(main_directory):
+        os.makedirs(main_directory)
+
+
+
+    # Assuming 'patent_numbers' is a list of patent numbers and 'url' is the URL to start with
+    #for patent in patent_numbers:
+    browser.get(url)
+    # Wait for the search box to be present and interact with it
+    search_box = WebDriverWait(browser, 10).until(
+        EC.presence_of_element_located((By.ID, "searchInput")))
+    search_box.clear()
+    search_box.send_keys(patent_name)   # здесь осуществляется поиск по имени
+    search_button = WebDriverWait(browser, 10).until(
+        EC.element_to_be_clickable((By.ID, "searchButton")))
+    search_button.click()
+
+    # Wait for the image carousel to be present
+    try:
+        image_carousel = WebDriverWait(browser, 10).until(EC.presence_of_element_located((By.ID, 'figures')))
+        images = image_carousel.find_elements(By.TAG_NAME, 'img')
+        flag = 0
+    except TimeoutException:
+        try:
+            images = WebDriverWait(browser, 10).until(
+                EC.presence_of_all_elements_located((By.CSS_SELECTOR, 'img[alt^="Figure"]')))
+            flag = 1
+        except TimeoutException:
+            # No images found after all attempts
+            print(f"В патенте {patent_name} не найдено структурных представлений.")
+
+
+    print(f"Всего для патента {patent_name} найдено изображений: {len(images)}")
+    current_patent_directory = os.path.join(main_directory, patent_name)
+
+    if not os.path.exists(current_patent_directory):
+        os.makedirs(current_patent_directory)
+    structural_formul_list = []
+    for index, img in enumerate(images, start=1):
+        try:
+            if flag == 1:
+                image_src = img.get_attribute('src')
+                image_filename = os.path.join(current_patent_directory, f"{patent_name}_image_{index}.png")
+                download_image(image_src, image_filename)
+                # print(f"Image saved: {image_filename}")
+                structural_formul_list.append(image_filename)
+            else:
+                # Get the image source URL without clicking
+                image_src = img.get_attribute('src')
+                image_filename = os.path.join(current_patent_directory, f"{patent_name}_image_{index}.png")
+                download_image(image_src, image_filename)
+                # print(f"Image saved: {image_filename}")
+                structural_formul_list.append(image_filename)
+        except Exception as e:
+            print("Failed to save image.")
+            print(e)
+            continue
+    print(structural_formul_list)
+
+    print("--------------")
+    print(uipac_list)
+    # Close the browser after the loop ends
+    browser.quit()
+
+
+    # Занесение в базу данных
+    # Подключаемся к базе данных
+    conn = sqlite3.connect('patents.db')
+    cursor = conn.cursor()
+
+    # Патент, с которым связываем соединения
+    patent_number = patent_name
+    # Получаем patent_id по patent_number
+    patent_id = get_patent_id(cursor, patent_number)
+
+
+
+
+    # Заносим формулы UIPAC в таблицу compounds
+    for uipac_formula in uipac_list:
+        cursor.execute("INSERT INTO compounds (uipac) VALUES (?)", (uipac_formula,))
+        compound_id = cursor.lastrowid
+        # Связываем соединение с патентом
+        cursor.execute("INSERT INTO compoundsInPatent (compound_id, patent_id) VALUES (?, ?)", (compound_id, patent_id))
+
+    # Заносим пути к изображениям в таблицу compounds
+    # Добавляем новые соединения в таблицу compounds
+    for structural_formula_path in structural_formul_list:
+        cursor.execute("INSERT INTO compounds (structural_formula) VALUES (?)", (structural_formula_path,))
+        compound_id = cursor.lastrowid
+        cursor.execute("INSERT INTO compoundsInPatent (compound_id, patent_id) VALUES (?, ?)", (compound_id, patent_id))
+
+    # Коммитим изменения и закрываем соединение
+    conn.commit()
+    conn.close()
+
+    # сохраняем вывод в переменную
+    output = sys.stdout.getvalue()
+
+    # восстанавливаем стандартный вывод
+    sys.stdout = stdout
+
+    # Сохраняем вывод в базу данных
+    conn = sqlite3.connect('patents.db')
+    cursor = conn.cursor()
+    cursor.execute("UPDATE users SET output=? WHERE id=?", (output, 1))
+    conn.commit()
+    conn.close()
+
+    return output
+
+#import ParseAllFormuls  # Импортируем функции парсинга
 
 # Функция для получения списка патентов из базы данных
 def get_patents():
@@ -72,10 +311,17 @@ def load_user(user_id):
     else:
         return None
 
+# форма сравнения
 class ChemComparisonForm(FlaskForm):
     patent_id = SelectField('Select Patent', coerce=int, validators=[DataRequired()])
     chem_input2 = StringField('SMILES 2', validators=[DataRequired()])
     submit = SubmitField('Compare')
+
+# форма парсинга
+class ChemParseForm(FlaskForm):
+    patent_id = SelectField('Select Patent', coerce=int, validators=[DataRequired()])
+    submit = SubmitField('Parse')
+
 
 def calculate_tanimoto_similarity(molecule1, molecule2):
     """
@@ -550,9 +796,47 @@ def process_comparison():
     return jsonify({'similarity': similarity, 'img1': img_base64_1, 'img2': img_base64_2, 'smiles_from_molfile': smiles_from_molfile})
 
 
+# страница управления патентами
+# страница управления патентами
+@app.route('/parse', methods=['GET', 'POST'])
+@login_required
+def parse():
+    form = ChemParseForm()
+    patents = get_patents()
+    form.patent_id.choices = [(patent[0], f"{patent[1]} - {patent[2]}") for patent in patents]
+    return render_template('parse.html', form=form)
 
+# обработчик для парсинга патента
 
-# страница сравнения химических соединен
+@app.route('/parse_patent', methods=['POST'])
+def parse_patentPage():
+    patent_id = request.json.get('patent_id')  # Используйте request.json для получения данных JSON
+    user_id = 1
+
+    # Устанавливаем соединение с базой данных
+    connection = sqlite3.connect('patents.db')
+    cursor = connection.cursor()
+
+    # Выполняем SQL-запрос для получения PatentNumber по id
+    cursor.execute("SELECT PatentNumber FROM patents WHERE id=?", (patent_id,))
+    PatentNumber = cursor.fetchone()
+
+    # Закрываем соединение
+    connection.close()
+
+    parsed_data = parse_patent(PatentNumber[0])
+    parsed_data = parsed_data.replace('\n', '<br>')
+
+    # Получите результаты парсинга из базы данных
+    connection = sqlite3.connect('patents.db')
+    cursor = connection.cursor()
+    cursor.execute("SELECT output FROM users WHERE id = ?", (user_id,))
+    output = cursor.fetchone()[0]
+    connection.close()
+
+    return jsonify(parsed_data)  # Верните результаты парсинга как JSON
+
+# страница сравнения химических соединений
 @app.route('/similarity', methods=['GET', 'POST'])
 @login_required
 def index():
@@ -633,7 +917,6 @@ WHERE c.smilesName != "not";
     conn.close()
 
     return jsonify({'patents': patents_except})
-
 
 
 @app.route('/get_patents_with_molfiles')

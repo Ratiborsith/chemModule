@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Chemical Structure Comparison</title>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+<header>
+    <nav>
+        <ul class="navigation-menu">
+            <li><a href="/">Домой</a></li>
+            <li><a href="/about">О модуле</a></li>
+            <li><a href="#">Поиск соединения</a></li>
+            <li><a href="#">Сравнение формул</a></li>
+            <li><a href="/parse">Парсинг</a></li>
+            <li><a href="/logout">Выйти</a></li>
+        </ul>
+    </nav>
+</header>
+
+<div class="page-content">
+    <h1>Chemical Structure Comparison</h1>
+    <form id="parse-form" class="comparison-form">
+        <p>
+            <label for="first_patent_id">Выберите патент:</label><br>
+            {{ form.patent_id(id="first_patent_id") }}<br>
+            {% if form.patent_id.errors %}
+                {% for error in form.patent_id.errors %}
+                    <span style="color: red;">{{ error }}</span><br>
+                {% endfor %}
+            {% endif %}
+        </p>
+        <button type="button" onclick="parsePatent()">Парсинг</button>
+    </form>
+
+    <div id="results">
+        <!-- Здесь будут отображаться результаты парсинга -->
+        <pre>{{ parsed_data|safe }}</pre>
+    </div>
+</div>
+
+<script>
+    function parsePatent() {
+        var selectedPatent = document.getElementById("first_patent_id").value;
+        fetch('/parse_patent', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ patent_id: selectedPatent }),
+        })
+        .then(response => response.text())
+        .then(data => {
+            document.getElementById('results').innerHTML = data;
+        })
+        .catch((error) => {
+            console.error('Error:', error);
+        });
+    }
+</script>
+
+</body>
+</html>
