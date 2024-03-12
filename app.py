@@ -24,11 +24,83 @@ import requests
 import re
 from bs4 import BeautifulSoup
 from itertools import product   # для перебора
+import time
+import json
+
+
+# -----------------------------------------------------
+# функции преобразования графического изображения в SMILES
+
+def upload(img_path):
+    img_path_root = os.path.join(os.getcwd())
+    img_path = img_path_root + os.sep + img_path
+    select_xpath = 'body > center:nth-child(1) > form:nth-child(3) > table:nth-child(1) > tbody:nth-child(1) > tr:nth-child(3) > td:nth-child(1) > input:nth-child(3)'
+    submit_xpath = '#b_upload'
+
+    driver.find_element(By.CSS_SELECTOR, select_xpath).send_keys(img_path)
+    driver.find_element(By.CSS_SELECTOR, submit_xpath).click()
+
+def get_information():
+    get_smiles_xpath = '#b_getsmiles'
+    smiles_xpath = 'body > center:nth-child(1) > form:nth-child(3) > table:nth-child(1) > tbody:nth-child(1) > tr:nth-child(3) > td:nth-child(2) > input:nth-child(1)'
+
+    driver.find_element(By.CSS_SELECTOR, get_smiles_xpath).click()
+    text = driver.find_element(By.CSS_SELECTOR, smiles_xpath).get_attribute("value")
+
+    return text
+
+def IMG2SMILES(img_path1):
+    # основная процедура
+    global driver
+    chrome_options = webdriver.ChromeOptions()
+
+    # Включаем использование DevTools
+    chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
+    chrome_options.add_experimental_option("useAutomationExtension", False)
+    chrome_options.add_argument("--disable-blink-features=AutomationControlled")
+    chrome_options.add_argument("--disable-infobars")
+    chrome_options.add_argument("--disable-dev-shm-usage")
+    chrome_options.add_argument("--disable-browser-side-navigation")
+    chrome_options.add_argument("--disable-gpu")
+    chrome_options.add_argument("--no-sandbox")
+    chrome_options.add_argument("--disable-notifications")
+    chrome_options.add_argument("--headless")
+
+    # Запускаем Chrome с DevTools Protocol (CDP)
+    driver = webdriver.Edge(options=chrome_options)
+    driver.get('https://cactus.nci.nih.gov/cgi-bin/osra/index.cgi')
+    wait = WebDriverWait(driver, 0)
+
+    img_folder = 'structuralFormuls'
+    imgs76 = os.listdir(img_folder)
+    smiles_list = {}
+
+
+    # Вызываем функцию upload для загрузки каждого изображения
+    upload(img_path1)
+    time.sleep(4)
+    try:
+        tmp_text = get_information()
+        smiles_list[img_path1] = tmp_text
+    except:
+        smiles_list[img_path1] = 'Sorry, no structures found'
+    print(smiles_list[img_path1])
+
+
+
+    driver.quit()
+
+    with open('result.json', 'w') as fp:
+        json.dump(smiles_list, fp)
+
+    return smiles_list[img_path1]
+
+# -----------------------------------------------------
+
+
 
 # -----------------------------------------------------
 # функции для сравнения патентов
-
-
 def calculate_tanimoto_similarity_Smiles(molecule1, molecule2):
     """
     Calculates the Tanimoto similarity coefficient between two molecules.
@@ -578,6 +650,10 @@ def process_comparison():
     # UIPAC для 2-го
     UIPAC2 = request.form.get('chem_input_UIPAC2_hidden')
 
+    #Structural для 1-го
+    Structural1 = request.form.get('chem_input_Structural1_hidden')
+    Structural2 = request.form.get('chem_input_Structural2_hidden')
+
     if slick1 == 0 and slick2 == 0:
         # сравнение MOL1 и MOL2
         try:
@@ -947,7 +1023,168 @@ def process_comparison():
             img2 = Draw.MolToImage(mol2)
             img_base64_2 = img_to_base64(img2)
 
-    return jsonify({'similarity': similarity, 'img1': img_base64_1, 'img2': img_base64_2, 'smiles_from_molfile': smiles_from_molfile})
+    elif slick1 == 4 and slick2 == 4:
+        # structural1 and structural2
+
+        # преобразуем в SMILES
+        mol1 = Chem.MolFromSmiles(IMG2SMILES(Structural1))
+        mol2 = Chem.MolFromSmiles(IMG2SMILES(Structural2))
+
+        if mol1 is not None and mol2 is not None:
+            similarity = calculate_tanimoto_similarity(Chem.MolToMolBlock(mol1), Chem.MolToSmiles(mol2))
+
+            img1 = Draw.MolToImage(mol1)
+            img_base64_1 = img_to_base64(img1)
+
+            img2 = Draw.MolToImage(mol2)
+            img_base64_2 = img_to_base64(img2)
+
+    elif slick1 == 4 and slick2 == 3:
+        # structural1 and iupac2
+        mol2_SMILES = cirpy.resolve(UIPAC2, 'smiles')
+        # преобразуем в SMILES
+        mol1 = Chem.MolFromSmiles(IMG2SMILES(Structural1))
+        mol2 = Chem.MolFromSmiles(mol2_SMILES)
+
+        if mol1 is not None and mol2 is not None:
+            similarity = calculate_tanimoto_similarity(Chem.MolToMolBlock(mol1), Chem.MolToSmiles(mol2))
+
+            img1 = Draw.MolToImage(mol1)
+            img_base64_1 = img_to_base64(img1)
+
+            img2 = Draw.MolToImage(mol2)
+            img_base64_2 = img_to_base64(img2)
+
+    elif slick1 == 4 and slick2 == 2:
+        # structural1 and inchi2
+        mol1 = Chem.MolFromSmiles(IMG2SMILES(Structural1))
+        mol2 = Chem.MolFromInchi(INCHI2)
+
+        if mol1 is not None and mol2 is not None:
+            similarity = calculate_tanimoto_similarity(Chem.MolToMolBlock(mol1), Chem.MolToSmiles(mol2))
+
+            img1 = Draw.MolToImage(mol1)
+            img_base64_1 = img_to_base64(img1)
+
+            img2 = Draw.MolToImage(mol2)
+            img_base64_2 = img_to_base64(img2)
+
+
+    elif slick1 == 4 and slick2 == 1:
+        # structural1 and SMILES2
+        mol1 = Chem.MolFromSmiles(IMG2SMILES(Structural1))
+        mol2 = Chem.MolFromSmiles(SMILES2)
+
+        if mol1 is not None and mol2 is not None:
+            similarity = calculate_tanimoto_similarity(Chem.MolToMolBlock(mol1), Chem.MolToSmiles(mol2))
+
+            img1 = Draw.MolToImage(mol1)
+            img_base64_1 = img_to_base64(img1)
+
+            img2 = Draw.MolToImage(mol2)
+            img_base64_2 = img_to_base64(img2)
+
+    elif slick1 == 4 and slick2 == 0:
+        # structural1 and MOL2
+        try:
+            molfiles_dir = os.path.join(app.root_path)
+            MOL2 = MOL2.replace('/', os.sep)
+            selected_molfile_abs_path = molfiles_dir + MOL2
+            with open(selected_molfile_abs_path, 'r') as molfile:
+                molfile_data = molfile.read()
+                molfile_content = molfile_data
+
+            mol2 = Chem.MolFromMolBlock(molfile_content)
+            smiles_from_molfile = molfile_to_smiles(molfile_content)
+
+            mol1 = Chem.MolFromSmiles(IMG2SMILES(Structural1))
+
+            if mol1 is not None and mol2 is not None:
+                similarity = calculate_tanimoto_similarity(Chem.MolToMolBlock(mol1), Chem.MolToSmiles(mol2))
+
+                img1 = Draw.MolToImage(mol1)
+                img_base64_1 = img_to_base64(img1)
+
+                img2 = Draw.MolToImage(mol2)
+                img_base64_2 = img_to_base64(img2)
+
+        except Exception as e:
+            return jsonify({'error': str(e)})
+
+    elif slick1 == 0 and slick2 == 4:
+        # MOL1 and Structural2
+        try:
+            molfiles_dir = os.path.join(app.root_path)
+            MOL1 = MOL1.replace('/', os.sep)
+            selected_molfile_abs_path = molfiles_dir + MOL1
+            with open(selected_molfile_abs_path, 'r') as molfile:
+                molfile_data = molfile.read()
+                molfile_content = molfile_data
+
+            mol1 = Chem.MolFromMolBlock(molfile_content)
+            smiles_from_molfile = molfile_to_smiles(molfile_content)
+
+            mol2 = Chem.MolFromSmiles(IMG2SMILES(Structural2))
+
+            if mol1 is not None and mol2 is not None:
+                similarity = calculate_tanimoto_similarity(Chem.MolToMolBlock(mol1), Chem.MolToSmiles(mol2))
+
+                img1 = Draw.MolToImage(mol1)
+                img_base64_1 = img_to_base64(img1)
+
+                img2 = Draw.MolToImage(mol2)
+                img_base64_2 = img_to_base64(img2)
+
+        except Exception as e:
+            return jsonify({'error': str(e)})
+
+    elif slick1 == 1 and slick2 == 4:
+        # SMILES1 and Structural2
+        mol1 = Chem.MolFromSmiles(SMILES1)
+        mol2 = Chem.MolFromSmiles(IMG2SMILES(Structural2))
+
+        if mol1 is not None and mol2 is not None:
+            similarity = calculate_tanimoto_similarity(Chem.MolToMolBlock(mol1), Chem.MolToSmiles(mol2))
+
+            img1 = Draw.MolToImage(mol1)
+            img_base64_1 = img_to_base64(img1)
+
+            img2 = Draw.MolToImage(mol2)
+            img_base64_2 = img_to_base64(img2)
+
+    elif slick1 == 2 and slick2 == 4:
+        # InChi1 and Structural2
+        mol1 = Chem.MolFromInchi(INCHI1)
+        mol2 = Chem.MolFromSmiles(IMG2SMILES(Structural2))
+
+        if mol1 is not None and mol2 is not None:
+            similarity = calculate_tanimoto_similarity(Chem.MolToMolBlock(mol1), Chem.MolToSmiles(mol2))
+
+            img1 = Draw.MolToImage(mol1)
+            img_base64_1 = img_to_base64(img1)
+
+            img2 = Draw.MolToImage(mol2)
+            img_base64_2 = img_to_base64(img2)
+
+    elif slick1 == 3 and slick2 == 4:
+        # IUPAC1 and Structural2
+        mol1_SMILES = cirpy.resolve(UIPAC1, 'smiles')
+        mol1 = Chem.MolFromSmiles(mol1_SMILES)
+        mol2 = Chem.MolFromSmiles(IMG2SMILES(Structural2))
+
+        if mol1 is not None and mol2 is not None:
+            similarity = calculate_tanimoto_similarity(Chem.MolToMolBlock(mol1), Chem.MolToSmiles(mol2))
+
+            img1 = Draw.MolToImage(mol1)
+            img_base64_1 = img_to_base64(img1)
+
+            img2 = Draw.MolToImage(mol2)
+            img_base64_2 = img_to_base64(img2)
+
+
+
+
+    return jsonify({'similarity': similarity, 'img1': img_base64_1, 'img2': img_base64_2})
 
 
 # страница управления патентами
@@ -1091,6 +1328,22 @@ def get_UIPAC_for_patent(patent_id):
     return jsonify({'UIPACS': UIPAC_for_patent})
 
 
+# Structural получение соединений в список
+@app.route('/get_Structural_for_patent/<int:patent_id>')
+@login_required
+def get_Structural_for_patent(patent_id):
+    conn = sqlite3.connect('patents.db')
+    cursor = conn.cursor()
+
+    cursor.execute('SELECT structural_formula FROM compounds WHERE id IN (SELECT compound_id FROM compoundsInPatent WHERE patent_id = ?) AND structural_formula != "not"', (patent_id,))
+    Structural_for_patent = cursor.fetchall()
+
+    conn.close()
+
+    return jsonify({'StructuralS': Structural_for_patent})
+
+
+
 @app.route('/get_patents_except/<int:patent_id>')
 @login_required
 def get_patents_except(patent_id):
@@ -1155,6 +1408,23 @@ WHERE c.inChiName != "not"
     patents_with_inchi= cursor.fetchall()
     conn.close()
     return jsonify({'patents': patents_with_inchi})
+
+
+# получить патенты с Structural
+@app.route('/get_patents_with_Structural')
+def get_patents_with_Structural():
+    conn = sqlite3.connect('patents.db')
+    cursor = conn.cursor()
+    cursor.execute('''
+        SELECT DISTINCT p.id, p.name, p.link
+FROM patents p
+JOIN compoundsInPatent cp ON p.id = cp.patent_id
+JOIN compounds c ON cp.compound_id = c.id
+WHERE c.structural_formula != "not"
+    ''')
+    patents_with_UIPAC= cursor.fetchall()
+    conn.close()
+    return jsonify({'patents': patents_with_UIPAC})
 
 # получить патенты с UIPAC
 @app.route('/get_patents_with_UIPAC')

@@ -3,27 +3,17 @@ import os
 import json
 
 from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support import expected_conditions as EC
 
 def upload(img_path):
-    #img_path = "C:\\pycharmpro\\chemModule\\structuralFormuls\\US20230136730A1-20230504-C00209.png"
     img_path_root = os.path.join(os.getcwd())
     img_path = img_path_root + os.sep + img_path
     select_xpath = 'body > center:nth-child(1) > form:nth-child(3) > table:nth-child(1) > tbody:nth-child(1) > tr:nth-child(3) > td:nth-child(1) > input:nth-child(3)'
     submit_xpath = '#b_upload'
-    getSmiles = '#b_getsmiles'
-    #clear_xpath = '/html/body/center/form/table/tbody/tr[3]/td[1]/center/input[2]'
 
-    #driver.find_element(By.XPATH(clear_xpath)).click()
     driver.find_element(By.CSS_SELECTOR, select_xpath).send_keys(img_path)
     driver.find_element(By.CSS_SELECTOR, submit_xpath).click()
-    #time.sleep(20)
-    #driver.find_element(By.CSS_SELECTOR, getSmiles).click()
-
 
 def get_information():
     get_smiles_xpath = '#b_getsmiles'
@@ -34,10 +24,9 @@ def get_information():
 
     return text
 
-
-def main():
+def IMG2SMILES(img_path1):
+    # основная процедура
     global driver
-    #chrome_driver_path = os.path.abspath("chromedriver.exe")  # Получаем абсолютный путь к chromedriver.exe
     chrome_options = webdriver.ChromeOptions()
 
     # Включаем использование DevTools
@@ -60,22 +49,25 @@ def main():
     img_folder = 'structuralFormuls'
     imgs76 = os.listdir(img_folder)
     smiles_list = {}
-    for img in imgs76:
-        upload(img_folder.replace('/', os.sep) + os.sep + img)
-        time.sleep(4)
-        try:
-            tmp_text = get_information()
-            driver.save_screenshot('res/' + img.rstrip('.jpg') + '.png')
-            smiles_list[img] = tmp_text
-        except:
-            smiles_list[img] = 'Sorry, no structures found'
 
-        print(smiles_list[img])
+
+    # Вызываем функцию upload для загрузки каждого изображения
+    upload(img_path1)
+    time.sleep(4)
+    try:
+        tmp_text = get_information()
+        smiles_list[img_path1] = tmp_text
+    except:
+        smiles_list[img_path1] = 'Sorry, no structures found'
+    print(smiles_list[img_path1])
+
+
+
     driver.quit()
 
     with open('result.json', 'w') as fp:
         json.dump(smiles_list, fp)
 
+    return smiles_list[img_path1]
 
-if __name__ == '__main__':
-    main()
+IMG2SMILES("Patent_images\\US7754717B2\\US7754717B2_image_32.png")
