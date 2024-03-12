@@ -100,6 +100,22 @@
             </div>
 
 
+            <!-- С графическими представлениями слайд -->
+            <div class="slick-slide">
+                <h1>Структурная формула</h1>
+                <p>
+                    <label for="first_patent_id_Structural">Выберите первый патент:</label><br>
+                    <select name="first_patent_id_Structural" id="first_patent_id_Structural">
+                        <option value="">Выберите патент</option>
+                    </select>
+                </p>
+                <p>
+                    <label for="chem_input_Structural1">Выберите графическое структурное представление для первого соединения:</label><br>
+                    <select name="chem_input_Structural1" id="chem_input_Structural1">
+                        <option value="">Выберите структурное представление</option>
+                    </select>
+                </p>
+            </div>
 
 
 
@@ -179,6 +195,23 @@
                 </p>
             </div>
 
+            <!-- С графическими представлениями слайд -->
+            <div class="slick-slide">
+                <h1>Структурная формула</h1>
+                <p>
+                    <label for="second_patent_id_Structural">Выберите второй патент:</label><br>
+                    <select name="second_patent_id_Structural" id="second_patent_id_Structural">
+                        <option value="">Выберите патент</option>
+                    </select>
+                </p>
+                <p>
+                    <label for="chem_input_Structural2">Выберите графическое структурное представление для второго соединения:</label><br>
+                    <select name="chem_input_Structural2" id="chem_input_Structural2">
+                        <option value="">Выберите структурное представление</option>
+                    </select>
+                </p>
+            </div>
+
 
         </div>
 
@@ -204,6 +237,10 @@
         <input type="hidden" name="chem_input_UIPAC1_hidden" id="chem_input_UIPAC1_hidden">
         <input type="hidden" name="chem_input_UIPAC2_hidden" id="chem_input_UIPAC2_hidden">
 
+
+        <!-- значения ГРАФИЧЕСКИХ -->
+        <input type="hidden" name="chem_input_Structural1_hidden" id="chem_input_Structural1_hidden">
+        <input type="hidden" name="chem_input_Structural2_hidden" id="chem_input_Structural2_hidden">
 
 
         <p>{{ form.submit() }}</p>
@@ -270,6 +307,11 @@
     // Получаем значения для второго UIPAC
     var chem_input_UIPAC2_value = $('#chem_input_UIPAC2').val();
 
+        // Получаем значения для первого UIPAC
+    var chem_input_Structural1_value = $('#chem_input_Structural1').val();
+    // Получаем значения для второго UIPAC
+    var chem_input_Structural2_value = $('#chem_input_Structural2').val();
+
     // Записываем значения из всех слайдов в скрытую форму
     $('#molfile_path_hidden').val(molfile_path_value);
     $('#first_patent_id_SMILES_hidden').val(first_patent_id_SMILES_value);
@@ -285,6 +327,8 @@
     $('#chem_input_UIPAC1_hidden').val(chem_input_UIPAC1_value);
     $('#chem_input_UIPAC2_hidden').val(chem_input_UIPAC2_value);
 
+    $('#chem_input_Structural1_hidden').val(chem_input_Structural1_value);
+    $('#chem_input_Structural2_hidden').val(chem_input_Structural2_value);
 
     // Отправляем форму через AJAX
     var form_data = $(this).serialize();
@@ -349,6 +393,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
     var UIPACPatentSelect2 = document.getElementById('second_patent_id_UIPAC');
     var UIPACSelect2 = document.getElementById('chem_input_UIPAC2');
+
+
+    // переменные для Structural
+    var StructuralPatentSelect1 = document.getElementById('first_patent_id_Structural');
+    var StructuralSelect1 = document.getElementById('chem_input_Structural1');
+
+    var StructuralPatentSelect2 = document.getElementById('second_patent_id_Structural');
+    var StructuralSelect2 = document.getElementById('chem_input_Structural2');
 
 
 
@@ -505,6 +557,44 @@ document.addEventListener('DOMContentLoaded', function() {
             .catch(error => console.error('Error fetching patents:', error));
     }
 
+    // Функция для загрузки списка патентов для 9-го соединения(по сути, просто поля)
+    function load9PatentList() {
+        fetch('/get_patents_with_Structural')
+            .then(response => response.json())
+            .then(data => {
+                StructuralPatentSelect1.innerHTML = '<option value="">Выберите Structural патент</option>'; // Clear previous entries
+
+                if (data.patents.length > 0) {
+                    data.patents.forEach(function(patent) {
+                        var option = document.createElement('option');
+                        option.value = patent[0];
+                        option.textContent = patent[1];
+                        StructuralPatentSelect1.appendChild(option);
+                    });
+                }
+            })
+            .catch(error => console.error('Error fetching patents:', error));
+    }
+
+    // Функция для загрузки списка патентов для 10-го соединения(по сути, просто поля)
+    function load10PatentList() {
+        fetch('/get_patents_with_Structural')
+            .then(response => response.json())
+            .then(data => {
+                StructuralPatentSelect2.innerHTML = '<option value="">Выберите Structural патент</option>'; // Clear previous entries
+
+                if (data.patents.length > 0) {
+                    data.patents.forEach(function(patent) {
+                        var option = document.createElement('option');
+                        option.value = patent[0];
+                        option.textContent = patent[1];
+                        StructuralPatentSelect2.appendChild(option);
+                    });
+                }
+            })
+            .catch(error => console.error('Error fetching patents:', error));
+    }
+
 
     // Загрузка списка патентов для всех соединений при загрузке страницы
     load1PatentList();
@@ -515,6 +605,8 @@ document.addEventListener('DOMContentLoaded', function() {
     load6PatentList();
     load7PatentList();
     load8PatentList();
+    load9PatentList();
+    load10PatentList();
 
     // добавление в первое поле значений в данном случае всех molfile в патенте
     firstPatentSelect.addEventListener('change', function() {
@@ -692,6 +784,52 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             })
             .catch(error => console.error('Error fetching UIPAC:', error));
+    });
+
+
+
+    // ЗАПОЛНЕНИЕ Structural
+
+    // первое соединение
+    StructuralPatentSelect1.addEventListener('change', function() {
+        var selectedPatentId = StructuralPatentSelect1.value;
+
+        fetch('/get_Structural_for_patent/' + selectedPatentId)
+            .then(response => response.json())
+            .then(data => {
+                StructuralSelect1.innerHTML = '<option value="">Выберите Structural</option>'; // Clear previous entries
+
+                if (data.StructuralS.length > 0) {
+                    data.StructuralS.forEach(function(Structural) {
+                        var option = document.createElement('option');
+                        option.value = Structural[0];
+                        option.textContent = Structural[0];
+                        StructuralSelect1.appendChild(option);
+                    });
+                }
+            })
+            .catch(error => console.error('Error fetching Structural:', error));
+    });
+
+    // второе соединение
+    StructuralPatentSelect2.addEventListener('change', function() {
+        var selectedPatentId = StructuralPatentSelect2.value;
+
+        fetch('/get_Structural_for_patent/' + selectedPatentId)
+            .then(response => response.json())
+            .then(data => {
+                StructuralSelect2.innerHTML = '<option value="">Выберите Structural</option>'; // Clear previous entries
+
+                if (data.StructuralS.length > 0) {
+                    data.StructuralS.forEach(function(Structural) {
+                        var option = document.createElement('option');
+                        option.value = Structural[0];
+                        option.textContent = Structural[0];
+                        StructuralSelect2.appendChild(option);
+                    });
+                }
+            })
+            .catch(error => console.error('Error fetching Structural:', error));
     });
 
 
