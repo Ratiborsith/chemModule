@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Chemical Structure Comparison</title>
+    <title>Сравнение химических формул</title>
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='styles.css') }}">
     <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/slick-carousel/1.8.1/slick.css"/>
     <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/slick-carousel/1.8.1/slick-theme.css"/>
@@ -12,7 +12,7 @@
         <ul class="navigation-menu">
             <li><a href="/">Домой</a></li>
             <li><a href="/about">О модуле</a></li>
-            <li><a href="#">Поиск соединения</a></li>
+            <li><a href="/patentsSimilarity">Сравнение патентов</a></li>
             <li><a href="#">Сравнение формул</a></li>
             <li><a href="/parse">Парсинг</a></li>
             <li><a href="/logout">Выйти</a></li>
@@ -21,7 +21,7 @@
 </header>
 
 <div class="page-content">
-    <h1>Chemical Structure Comparison</h1>
+    <h1>Сравнение химических формул</h1>
     <form method="POST" class="comparison-form" >
         {{ form.hidden_tag() }}
 
@@ -300,17 +300,14 @@
                 var html = '';
 
                 if (response.similarity !== null) {
-                    html += '<p>Tanimoto similarity: ' + response.similarity + '</p>';
+                    html += '<p>Коэффициент Tanimoto: ' + response.similarity + '</p>';
                 }
                 if (response.img1) {
-                    html += '<p>Molecule from molfile:</p>';
+                    html += '<p>Первая молекула:</p>';
                     html += '<img src="data:image/png;base64,' + response.img1 + '" alt="Molecule 1 Image">';
-                    if (response.smiles_from_molfile) {
-                        html += '<p>SMILES from molfile: ' + response.smiles_from_molfile + '</p>';
-                    }
                 }
                 if (response.img2) {
-                    html += '<p>Molecule from SMILES:</p>';
+                    html += '<p>Вторая молекула:</p>';
                     html += '<img src="data:image/png;base64,' + response.img2 + '" alt="Molecule 2 Image">';
                 }
 

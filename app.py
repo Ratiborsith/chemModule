@@ -11,7 +11,6 @@ from wtforms import StringField, SubmitField, FileField
 from wtforms.validators import DataRequired
 from wtforms import SelectField
 import cirpy    # библиотека для обработки uipac
-from flask import render_template_string
 
 import time
 from selenium import webdriver
@@ -24,14 +23,170 @@ from selenium.common.exceptions import TimeoutException
 import requests
 import re
 from bs4 import BeautifulSoup
+from itertools import product   # для перебора
 
-import io
-import sys
+# -----------------------------------------------------
+# функции для сравнения патентов
 
+
+def calculate_tanimoto_similarity_Smiles(molecule1, molecule2):
+    """
+    Calculates the Tanimoto similarity coefficient between two molecules.
+    """
+    # Convert SMILES strings to RDKit molecules
+    mol1 = Chem.MolFromSmiles(molecule1)
+    mol2 = Chem.MolFromSmiles(molecule2)
+
+    if mol1 is None or mol2 is None:
+        raise ValueError("Invalid input provided.")
+
+    # Generate Morgan fingerprints for the molecules
+    fp1 = AllChem.GetMorganFingerprintAsBitVect(mol1, 2, nBits=1024)
+    fp2 = AllChem.GetMorganFingerprintAsBitVect(mol2, 2, nBits=1024)
+
+    # Calculate Tanimoto similarity
+    similarity = DataStructs.TanimotoSimilarity(fp1, fp2)
+
+    return similarity
+
+
+def print_compound_info(connection, compound_id):
+    compounds_in_list = []
+    cursor = connection.cursor()
+    cursor.execute("SELECT * FROM compounds WHERE id=?", (compound_id,))
+    compound = cursor.fetchone()
+    if compound:
+        # мы должны любое представление преобразовать в smiles и добавить в список уже в таком виде
+        if compound[1] != 'not':
+            print(f"Compound ID: {compound[0]}")
+            print(f"SmilesName: {compound[1]}")
+            compounds_in_list.append(compound[1])
+
+        if compound[2] != 'not':
+            print(f"Compound ID: {compound[0]}")
+            print(f"inChiName: {compound[2]}")
+
+            # преобразуем в Smiles
+            compoundSmilesNameMol = Chem.MolFromInchi(compound[2])
+            compoundSmilesName = Chem.MolToSmiles(compoundSmilesNameMol)
+            compounds_in_list.append(compoundSmilesName)
+
+        if compound[3] != 'not':
+            print(f"Compound ID: {compound[0]}")
+            print(f"molfile_path: {compound[3]}")
+
+            # преобразуем в Smiles
+
+            MOL1 = compound[3]
+            # формируем молекулу из МОЛОВ
+            molfiles_dir = os.path.join(os.getcwd())
+            MOL1 = MOL1.replace('/', os.sep)
+            selected_molfile_abs_path = molfiles_dir + MOL1
+            with open(selected_molfile_abs_path, 'r') as molfile:
+                molfile_data = molfile.read()
+                molfile_content = molfile_data
+
+            mol1 = Chem.MolFromMolBlock(molfile_content)
+            smiles_from_molfile = molfile_to_smiles(molfile_content)
+            if smiles_from_molfile != None:
+                compounds_in_list.append(smiles_from_molfile)
+
+        if compound[4] != 'not':
+            print(f"Compound ID: {compound[0]}")
+            print(f"uipac: {compound[4]}")
+
+            # преобразуем uipac в smiles
+            UIPAC = compound[4]
+            try:
+                smilesFromUIPAC = cirpy.resolve(UIPAC, "smiles")
+                if smilesFromUIPAC is not None:
+                    compounds_in_list.append(smilesFromUIPAC)
+            except:
+                pass
+
+    return compounds_in_list
+
+# вспомогательная функция для функции сравнения патентов
+def get_compound_formulas(connection, patent_id):
+    all_compounds_in_list = []
+    cursor = connection.cursor()
+    cursor.execute("SELECT compound_id FROM compoundsInPatent WHERE patent_id=?", (patent_id,))
+    compound_ids = cursor.fetchall()
+    if compound_ids:
+        for compound_id in compound_ids:
+            all_compounds_in_list += print_compound_info(connection, compound_id[0])
+    else:
+        print("No compounds found for patent_id:", patent_id)
+
+    return all_compounds_in_list
+
+def get_similarity_patents(patent1_id, patent2_id, comparison_type):
+
+
+    connection = sqlite3.connect('patents.db')  # Замените на имя вашей базы данных
+    all_compounds_in_patent1 = get_compound_formulas(connection, patent1_id)
+    all_compounds_in_patent2 = get_compound_formulas(connection, patent2_id)
+    connection.close()
+    print(all_compounds_in_patent1)
+    print(all_compounds_in_patent2)
+
+
+    # Создаем список пар элементов из обоих списков
+    pairs = list(product(all_compounds_in_patent1, all_compounds_in_patent2))
+
+    # Создаем пустой словарь для хранения сходства между парами
+    similarity_scores = {}
+
+    # Проходим по каждой паре и вычисляем сходство
+    for pair in pairs:
+        similarity = calculate_tanimoto_similarity_Smiles(pair[0], pair[1])
+        similarity_scores[(pair[0], pair[1])] = similarity
+
+    # Сортируем словарь по значению сходства в порядке убывания
+    sorted_similarity = sorted(similarity_scores.items(), key=lambda x: x[1], reverse=True)
+
+    # строчка для вывода сходства на страницу
+    SimilarityString = ""
+
+    if comparison_type == "IUPAC":
+        # Выводим результаты
+        for pair, similarity in sorted_similarity:
+            # Для первого соединения
+            first_compound = cirpy.resolve(pair[0], "iupac_name")
+            # если не нашлось, то оставляем в smiles
+            if first_compound == None:
+                first_compound = pair[0]
+
+            # Для второго соединения
+            # преобразуем в iupac
+            second_compound = cirpy.resolve(pair[1], "iupac_name")
+            # если не нашлось, то оставляем в smiles
+            if second_compound == None:
+                second_compound = pair[1]
+            SimilarityString += "<br>"
+            SimilarityString += "<br>"
+            SimilarityString += f"Сходство между {first_compound} и {second_compound}: {similarity}"
+            # Печатаем сходство
+            print(f"Сходство между {first_compound} и {second_compound}: {similarity}")
+
+    # возвращаем строчку, содержащую весь нужный нам вывод
+    elif comparison_type == "SMILES":
+        # Выводим результаты
+        for pair, similarity in sorted_similarity:
+            first_compound = pair[0]
+            second_compound = pair[1]
+
+            SimilarityString += "<br>"
+            SimilarityString += "<br>"
+            SimilarityString += f"Сходство между {first_compound} и {second_compound}: {similarity}"
+            # Печатаем сходство
+            print(f"Сходство между {first_compound} и {second_compound}: {similarity}")
+    return SimilarityString
+
+# конец функций для сравнения патентов
+# -----------------------------------------------------
 
 # функции для парсинга
-
-
 def get_patent_id(cursor, patent_number):
     cursor.execute("SELECT id FROM patents WHERE PatentNumber = ?", (patent_number,))
     result = cursor.fetchone()
@@ -93,11 +248,10 @@ def extract_chemical_info(html_content):
                 chemical_info.setdefault("compoundName", []).append(name)
     return chemical_info
 
-# Main function
+# Главная функция для парсинга патентов
 def parse_patent(patent_number_url):
 
-    stdout = sys.stdout
-    sys.stdout = io.StringIO()
+    output = "" # строка вывода
 
     # сначала парсим все uipac - представления, а также текстовые, если встретятся
     url = f"https://patents.google.com/patent/{patent_number_url}"
@@ -112,13 +266,19 @@ def parse_patent(patent_number_url):
 
             if type_name == "UIPAC":
                 print(type_name + ":")
+                output += type_name + ":"
                 for formula in chemical_info[type_name]:
-                    print(formula)
-                    uipac_list.append(formula)
-                    i = i + 1
+                    try:
+                        print(formula)
+                        output += formula + "<br>"
+                        uipac_list.append(formula)
+                        i = i + 1
+                    except:
+                        pass
 
-
-        print(f"Количество найденных формул: {i}")
+        prStr = f"Количество найденных формул: {i}"
+        print(prStr)
+        #output += prStr + "<br>"
 
 
     # Далее парсим все структурные представления формул, которые есть в патенте
@@ -168,10 +328,16 @@ def parse_patent(patent_number_url):
             flag = 1
         except TimeoutException:
             # No images found after all attempts
-            print(f"В патенте {patent_name} не найдено структурных представлений.")
+            prStr = f"В патенте {patent_name} не найдено структурных представлений."
+            print(prStr)
+            output += "<br>"+prStr + "<br>"
+    try:
+        prStr = f"Всего для патента {patent_name} найдено изображений: {len(images)}"
+        print(prStr)
+        #output += "<br>" + prStr + "<br>"
+    except:
+        pass
 
-
-    print(f"Всего для патента {patent_name} найдено изображений: {len(images)}")
     current_patent_directory = os.path.join(main_directory, patent_name)
 
     if not os.path.exists(current_patent_directory):
@@ -184,6 +350,7 @@ def parse_patent(patent_number_url):
                 image_filename = os.path.join(current_patent_directory, f"{patent_name}_image_{index}.png")
                 download_image(image_src, image_filename)
                 # print(f"Image saved: {image_filename}")
+                output += "<br>" + f"Image saved: {image_filename}" + "<br>"
                 structural_formul_list.append(image_filename)
             else:
                 # Get the image source URL without clicking
@@ -191,15 +358,14 @@ def parse_patent(patent_number_url):
                 image_filename = os.path.join(current_patent_directory, f"{patent_name}_image_{index}.png")
                 download_image(image_src, image_filename)
                 # print(f"Image saved: {image_filename}")
+                output += "<br>" + f"Image saved: {image_filename}" + "<br>"
                 structural_formul_list.append(image_filename)
         except Exception as e:
             print("Failed to save image.")
+            output += "<br>" + "Failed to save image." + "<br>"
             print(e)
             continue
-    print(structural_formul_list)
 
-    print("--------------")
-    print(uipac_list)
     # Close the browser after the loop ends
     browser.quit()
 
@@ -235,18 +401,6 @@ def parse_patent(patent_number_url):
     conn.commit()
     conn.close()
 
-    # сохраняем вывод в переменную
-    output = sys.stdout.getvalue()
-
-    # восстанавливаем стандартный вывод
-    sys.stdout = stdout
-
-    # Сохраняем вывод в базу данных
-    conn = sqlite3.connect('patents.db')
-    cursor = conn.cursor()
-    cursor.execute("UPDATE users SET output=? WHERE id=?", (output, 1))
-    conn.commit()
-    conn.close()
 
     return output
 
@@ -797,7 +951,6 @@ def process_comparison():
 
 
 # страница управления патентами
-# страница управления патентами
 @app.route('/parse', methods=['GET', 'POST'])
 @login_required
 def parse():
@@ -827,14 +980,52 @@ def parse_patentPage():
     parsed_data = parse_patent(PatentNumber[0])
     parsed_data = parsed_data.replace('\n', '<br>')
 
-    # Получите результаты парсинга из базы данных
-    connection = sqlite3.connect('patents.db')
-    cursor = connection.cursor()
-    cursor.execute("SELECT output FROM users WHERE id = ?", (user_id,))
-    output = cursor.fetchone()[0]
-    connection.close()
 
     return jsonify(parsed_data)  # Верните результаты парсинга как JSON
+
+
+# ----------------------------
+# страница сравнения патентов
+@app.route('/patentsSimilarity', methods=['GET', 'POST'])
+@login_required
+def patentsSimilarity():
+    form = ChemParseForm()
+    patents = get_patents()
+    form.patent_id.choices = [(patent[0], f"{patent[1]} - {patent[2]}") for patent in patents]
+    return render_template('patentsSimilarity.html', form=form)
+
+
+# обработчик для сравнения двух патентов
+
+@app.route('/patents_similar', methods=['POST'])
+def patents_similar():
+    patent1_id = request.json.get('patent1_id')  # Получим id 1-го патента
+    patent2_id = request.json.get('patent2_id')  # Получим id 2-го патента
+    comparison_type = request.json.get('comparison_type')     # получим значение радиобатонов
+
+
+    user_id = 1
+
+    # Устанавливаем соединение с базой данных
+    connection = sqlite3.connect('patents.db')
+    cursor = connection.cursor()
+
+    # Выполняем SQL-запрос для получения PatentNumber по id
+    cursor.execute("SELECT PatentNumber FROM patents WHERE id=?", (patent1_id,))
+    Patent1Number = cursor.fetchone()
+
+    # для второго патента
+    cursor.execute("SELECT PatentNumber FROM patents WHERE id=?", (patent2_id,))
+    Patent2Number = cursor.fetchone()
+    # Закрываем соединение
+    connection.close()
+
+    comparison_results = f"Результат сравнения двух патентов {Patent1Number[0]} и {Patent2Number[0]}:"
+
+    comparison_results += get_similarity_patents(patent1_id, patent2_id, comparison_type)    # вычисление схожести формул в патенте
+
+    return jsonify(comparison_results)  # Верните результаты парсинга как JSON
+
 
 # страница сравнения химических соединений
 @app.route('/similarity', methods=['GET', 'POST'])

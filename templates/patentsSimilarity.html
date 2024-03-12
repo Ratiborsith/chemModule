@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Сравнение патентов</title>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+<header>
+    <nav>
+        <ul class="navigation-menu">
+            <li><a href="/">Домой</a></li>
+            <li><a href="/about">О модуле</a></li>
+            <li><a href="/patentsSimilarity">Сравнение патентов</a></li>
+            <li><a href="/similarity">Сравнение формул</a></li>
+            <li><a href="/parse">Парсинг</a></li>
+            <li><a href="/logout">Выйти</a></li>
+        </ul>
+    </nav>
+</header>
+
+<div class="page-content">
+    <h1>Сравнение патентов</h1>
+    <form id="comparison-form" class="comparison-form">
+        <p>
+            <label for="first_patent_id">Выберите первый патент:</label><br>
+            {{ form.patent_id(id="first_patent_id") }}<br>
+            {% if form.patent_id.errors %}
+                {% for error in form.patent_id.errors %}
+                    <span style="color: red;">{{ error }}</span><br>
+                {% endfor %}
+            {% endif %}
+        </p>
+
+        <p>
+            <label for="second_patent_id">Выберите второй патент:</label><br>
+            {{ form.patent_id(id="second_patent_id") }}<br>
+            {% if form.patent_id.errors %}
+                {% for error in form.patent_id.errors %}
+                    <span style="color: red;">{{ error }}</span><br>
+                {% endfor %}
+            {% endif %}
+        </p>
+
+        <p>
+            <label>Выберите тип представления формул при выводе:</label><br>
+            <input type="radio" name="comparison_type" value="IUPAC" id="full_comparison" checked>
+            <label for="full_comparison">IUPAC</label><br>
+            <input type="radio" name="comparison_type" value="SMILES" id="partial_comparison">
+            <label for="partial_comparison">SMILES</label><br>
+        </p>
+
+        <button type="button" onclick="comparisonPatents()">Сравнение</button>
+    </form>
+
+    <div id="results">
+        <!-- Здесь будут отображаться результаты парсинга -->
+        <pre>{{ parsed_data|escape }}</pre>
+    </div>
+</div>
+
+<script>
+function decodeUnicode(str) {
+    return str.replace(/\\u[\dA-F]{4}/gi, function(match) {
+        return String.fromCharCode(parseInt(match.replace(/\\u/g, ''), 16));
+    });
+}
+
+function comparisonPatents() {
+    var selectedFirstPatent = document.getElementById("first_patent_id").value;
+    var selectedSecondPatent = document.getElementById("second_patent_id").value;
+    var comparisonType = document.querySelector('input[name="comparison_type"]:checked').value;
+    fetch('/patents_similar', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ patent1_id: selectedFirstPatent, patent2_id: selectedSecondPatent, comparison_type: comparisonType }),
+    })
+    .then(response => response.text())
+    .then(data => {
+        // Декодирование Unicode-последовательностей в символы Unicode
+        data = decodeUnicode(data);
+        document.getElementById('results').innerHTML = data;
+    })
+    .catch((error) => {
+        console.error('Error:', error);
+    });
+}
+</script>
+
+</body>
+</html>
