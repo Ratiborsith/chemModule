@@ -2,11 +2,14 @@
 <html>
 <head>
     <title>Сравнение патентов</title>
-    <meta charset="UTF-8">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='assets/bootstrap/css/bootstrap.min.css') }}">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='assets/css/animate.min.css') }}">
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 <body>
-<header>
+<header class="border rounded shadow-lg bounce animated">
     <nav>
         <ul class="navigation-menu">
             <li><a href="/">Домой</a></li>
@@ -50,7 +53,7 @@
             <label for="partial_comparison">SMILES</label><br>
         </p>
 
-        <button type="button" onclick="comparisonPatents()">Сравнение</button>
+        <center><button class="btn btn-white btn-animate" type="button" onclick="comparisonPatents()">Сравнение</button></center>
     </form>
 
     <div id="results">

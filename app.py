@@ -33,6 +33,7 @@ import json
 
 def upload(img_path):
     img_path_root = os.path.join(os.getcwd())
+
     img_path = img_path_root + os.sep + img_path
     select_xpath = 'body > center:nth-child(1) > form:nth-child(3) > table:nth-child(1) > tbody:nth-child(1) > tr:nth-child(3) > td:nth-child(1) > input:nth-child(3)'
     submit_xpath = '#b_upload'
@@ -67,12 +68,12 @@ def IMG2SMILES(img_path1):
     chrome_options.add_argument("--headless")
 
     # Запускаем Chrome с DevTools Protocol (CDP)
-    driver = webdriver.Edge(options=chrome_options)
+    driver = webdriver.Chrome(options=chrome_options)
     driver.get('https://cactus.nci.nih.gov/cgi-bin/osra/index.cgi')
-    wait = WebDriverWait(driver, 0)
+    wait = WebDriverWait(driver, 10)
 
-    img_folder = 'structuralFormuls'
-    imgs76 = os.listdir(img_folder)
+    #img_folder = 'structuralFormuls'
+    #imgs76 = os.listdir(img_folder)
     smiles_list = {}
 
 
@@ -270,6 +271,7 @@ def get_patent_id(cursor, patent_number):
 
 def download_image(url, filename, max_retries=3):
     attempt = 0
+
     while attempt < max_retries:
         try:
             urllib.request.urlretrieve(url, filename)
@@ -575,6 +577,12 @@ def mainPage():
     patents = get_patents()
     return render_template('main.html', patents=patents)
 
+# Маршрут для отображения списка патентов
+@app.route('/Welcome')
+def WelcomePage():
+    patents = get_patents()
+
+    return render_template('Welcome.html', patents=patents)
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -593,7 +601,7 @@ def login():
             user = User()
             user.id = user_data[0]  # Предполагается, что первый столбец - это ID пользователя
             login_user(user)
-            return redirect(url_for('index'))  # Перенаправляем на страницу '/similarity'
+            return redirect(url_for('WelcomePage'))  # Перенаправляем на страницу '/similarity'
         else:
             error = "Неверный логин или пароль"
 
@@ -652,8 +660,9 @@ def process_comparison():
 
     #Structural для 1-го
     Structural1 = request.form.get('chem_input_Structural1_hidden')
+    Structural1 = Structural1.replace("\\", "/")
     Structural2 = request.form.get('chem_input_Structural2_hidden')
-
+    Structural2 = Structural2.replace("\\", "/")
     if slick1 == 0 and slick2 == 0:
         # сравнение MOL1 и MOL2
         try:

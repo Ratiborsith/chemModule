@@ -2,10 +2,12 @@
 <html>
 <head>
     <title>Chemical Structure Comparison</title>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='assets/bootstrap/css/bootstrap.min.css') }}">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='assets/css/animate.min.css') }}">
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 <body>
-<header>
+<header class="border rounded shadow-lg bounce animated">
     <nav>
         <ul class="navigation-menu">
             <li><a href="/">Домой</a></li>
@@ -30,7 +32,7 @@
                 {% endfor %}
             {% endif %}
         </p>
-        <button type="button" onclick="parsePatent()">Парсинг</button>
+        <center><button class="btn btn-white btn-animate" type="button" onclick="parsePatent()">Парсинг</button></center>
     </form>
 
     <div id="results">

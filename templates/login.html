@@ -1,18 +1,18 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
+
 <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
     <title>Login</title>
-    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='styles.css') }}">
-    <script>
-        {% if error %}
-            window.onload = function() {
-                alert('{{ error }}');
-            };
-        {% endif %}
-    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/slick-carousel/1.8.1/slick.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/slick-carousel/1.8.1/slick-theme.css">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='assets/css/styles.css') }}">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='assets/bootstrap/css/bootstrap.min.css') }}">
 </head>
+
 <body>
-    <header>
+    <header class="border rounded shadow-lg bounce animated">
         <nav>
             <ul class="navigation-menu">
                 <li><a href="/">Домой</a></li>
@@ -23,21 +23,17 @@
             </ul>
         </nav>
     </header>
-
     <div class="login-container">
-        <form method="POST" class="login-form">
-            <h1>Login</h1>
-            <p>
-                Добро пожаловать в модуль! Пожалуйста, авторизуйтесь<br>
-            </p>
-            <p>
-                <input type="text" name="username" required placeholder="ваш логин">
-            </p>
-            <p>
-                <input type="password" name="password" required placeholder="ваш пароль">
-            </p>
+        <form class="shadow-lg login-form" method="POST">
+            <h1>Авторизация</h1>
+            <p> Добро пожаловать в модуль! Пожалуйста, авторизуйтесь<br></p>
+            <p><input type="text" name="username" required="" placeholder="ваш логин"></p>
+            <p><input type="password" name="password" required="" placeholder="ваш пароль"></p>
             <p><input type="submit" value="Login" class="login-button"></p>
         </form>
     </div>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/slick-carousel/1.8.1/slick.min.js"></script>
 </body>
+
 </html>

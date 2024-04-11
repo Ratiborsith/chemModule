@@ -1,11 +1,19 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
+
 <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
     <title>Список патентов</title>
-    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='styles.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/slick-carousel/1.8.1/slick.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/slick-carousel/1.8.1/slick-theme.css">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='assets/bootstrap/css/bootstrap.min.css') }}">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='assets/css/animate.min.css') }}">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='assets/css/styles.css') }}">
 </head>
+
 <body>
-    <header>
+    <header class="border rounded shadow-lg bounce animated">
         <nav>
             <ul class="navigation-menu">
                 <li><a href="/">Домой</a></li>
@@ -16,10 +24,9 @@
             </ul>
         </nav>
     </header>
-
-    <div class="page-content">
+    <div class="text-center page-content">
         <h1>Список патентов</h1>
-        <ul>
+        <ul class="list3b">
             {% for patent in patents %}
             <li>
                 <a href="{{ patent[3] }}" target="_blank">{{ patent[2] }} - {{ patent[1] }}</a>
@@ -29,5 +36,8 @@
             {% endfor %}
         </ul>
     </div>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/slick-carousel/1.8.1/slick.min.js"></script>
 </body>
+
 </html>
