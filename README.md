@@ -90,7 +90,7 @@ python app.py
 <img width="600" alt="image" src="https://github.com/Ratiborsith/chemModule/assets/85187788/14a3efa6-82b0-4bac-94f3-bfc8662c5863">
 <br>Рисунок 4 – Сравнение двух химических формул<br>
 <img width="600" alt="image" src="https://github.com/Ratiborsith/chemModule/assets/85187788/c0261af6-4552-46d4-bda2-25f27636862c">
-<br>Рисунок 4 – Сравнение двух патентов<br>
+<br>Рисунок 5 – Сравнение двух патентов<br>
 
 
 
