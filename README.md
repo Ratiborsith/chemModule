@@ -59,7 +59,9 @@ python app.py
 После анализа и сравнения химических формул, модуль преобразует полученные данные в единый формат SMILES для удобства дальнейшего использования и сравнения.
 
 ## Архитектура
+<p align="center">
 <img width="600" alt="image" src="https://github.com/Ratiborsith/chemModule/assets/85187788/2aceb93e-ce1f-4e14-b350-1a5c366853e4"> <br>
+</p>
 1. – обращение к базе Google Patents по ссылке патента;
 2. – получение из Google Patents кода страницы патента;
 3. – вызов блока парсинга формул;
@@ -77,7 +79,9 @@ python app.py
 
 
 ## Как выглядит программный модуль?
+<p align="center">
 <img width="600" alt="image" src="https://github.com/Ratiborsith/chemModule/assets/85187788/f905b260-0e09-429a-aa2c-77b8abb8a53c">
+
 <br>
 Рисунок 1 – Авторизация
 <br>
@@ -91,8 +95,7 @@ python app.py
 <br>Рисунок 4 – Сравнение двух химических формул<br>
 <img width="600" alt="image" src="https://github.com/Ratiborsith/chemModule/assets/85187788/c0261af6-4552-46d4-bda2-25f27636862c">
 <br>Рисунок 5 – Сравнение двух патентов<br>
-
-
+</p>
 
 
 
