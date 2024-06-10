@@ -42,7 +42,7 @@ python app.py
 #### •	Используемая модель для конвертации структурных формул: OSRA.
 
 ## Архитектура
-<img width="397" alt="image" src="https://github.com/Ratiborsith/chemModule/assets/85187788/2aceb93e-ce1f-4e14-b350-1a5c366853e4"> <br>
+<img width="600" alt="image" src="https://github.com/Ratiborsith/chemModule/assets/85187788/2aceb93e-ce1f-4e14-b350-1a5c366853e4"> <br>
 1. – обращение к базе Google Patents по ссылке патента;
 2. – получение из Google Patents кода страницы патента;
 3. – вызов блока парсинга формул;
@@ -57,6 +57,26 @@ python app.py
 12. – обращение к БД для проверки авторизации;
 13. – получение из БД пароля для указанного по логину пользователя. Сравнение через Flask-Login с указанными;
 14. – получение из БД списка патентов.
+
+
+## Как выглядит программный модуль?
+<img width="600" alt="image" src="https://github.com/Ratiborsith/chemModule/assets/85187788/f905b260-0e09-429a-aa2c-77b8abb8a53c">
+<br>
+Рисунок 1 – Авторизация
+<br>
+<img width="600" alt="image" src="https://github.com/Ratiborsith/chemModule/assets/85187788/90851b3c-e77c-41c0-ae12-995c325b718b">
+<br>
+Рисунок 2 – Список патентов
+<br>
+<img width="600" alt="image" src="https://github.com/Ratiborsith/chemModule/assets/85187788/ebff24fb-9354-4472-8e8a-7eac4cfc9bbe">
+<br>Рисунок 3 – Парсер<br>
+<img width="600" alt="image" src="https://github.com/Ratiborsith/chemModule/assets/85187788/14a3efa6-82b0-4bac-94f3-bfc8662c5863">
+<br>Рисунок 4 – Сравнение двух химических формул<br>
+<img width="600" alt="image" src="https://github.com/Ratiborsith/chemModule/assets/85187788/c0261af6-4552-46d4-bda2-25f27636862c">
+<br>Рисунок 4 – Сравнение двух патентов<br>
+
+
+
 
 
 
